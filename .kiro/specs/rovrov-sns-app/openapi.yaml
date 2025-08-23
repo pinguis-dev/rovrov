@@ -1,0 +1,961 @@
+openapi: 3.0.3
+info:
+  title: RovRov SNS API
+  description: Location-based social networking API for sharing daily happiness moments
+  version: 1.0.0
+  contact:
+    name: RovRov Support
+    email: support@rovrov.app
+servers:
+  - url: https://api.rovrov.app/v1
+    description: Production server
+  - url: https://staging-api.rovrov.app/v1
+    description: Staging server
+  - url: http://localhost:3000/v1
+    description: Development server
+
+tags:
+  - name: auth
+    description: Authentication endpoints
+  - name: profiles
+    description: User profile management
+  - name: posts
+    description: Post creation and management
+  - name: media
+    description: Media upload and management
+  - name: social
+    description: Social interactions
+  - name: pins
+    description: Location tag management
+  - name: map
+    description: Map-related endpoints
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              example: POST_NOT_FOUND
+            message:
+              type: string
+              example: The requested post does not exist
+            details:
+              type: object
+              additionalProperties: true
+            request_id:
+              type: string
+              format: uuid
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+          maxLength: 50
+
+    Profile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+          maxLength: 50
+        display_name:
+          type: string
+          maxLength: 100
+        bio:
+          type: string
+          maxLength: 500
+        avatar_url:
+          type: string
+          format: uri
+        header_url:
+          type: string
+          format: uri
+        followers_count:
+          type: integer
+        following_count:
+          type: integer
+        posts_count:
+          type: integer
+        is_following:
+          type: boolean
+        is_friend:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    Post:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        caption:
+          type: string
+          maxLength: 2000
+        status:
+          type: string
+          enum: [draft, temporary, published, archived, deleted]
+        visibility:
+          type: string
+          enum: [public, friends, private]
+        map_visibility:
+          type: string
+          enum: [none, approx_100m, exact]
+        display_point:
+          $ref: '#/components/schemas/Point'
+        pin:
+          $ref: '#/components/schemas/Pin'
+        media:
+          type: array
+          items:
+            $ref: '#/components/schemas/Media'
+        tags:
+          type: array
+          items:
+            type: string
+            maxLength: 64
+        favorite_count:
+          type: integer
+        repost_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        published_at:
+          type: string
+          format: date-time
+
+    Media:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        url:
+          type: string
+          format: uri
+        thumbnail_url:
+          type: string
+          format: uri
+        type:
+          type: string
+          enum: [image, video]
+        width:
+          type: integer
+        height:
+          type: integer
+        duration_seconds:
+          type: integer
+
+    Pin:
+      type: object
+      required:
+        - name
+        - location
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 255
+        location:
+          $ref: '#/components/schemas/Point'
+        source:
+          type: string
+          enum: [user, google, foursquare]
+        address:
+          type: string
+          maxLength: 500
+        posts_count:
+          type: integer
+
+    Point:
+      type: object
+      required:
+        - type
+        - coordinates
+      properties:
+        type:
+          type: string
+          enum: [Point]
+        coordinates:
+          type: array
+          items:
+            type: number
+          minItems: 2
+          maxItems: 2
+          description: "[longitude, latitude]"
+
+    Pagination:
+      type: object
+      properties:
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
+        total_count:
+          type: integer
+
+  parameters:
+    cursor:
+      name: cursor
+      in: query
+      schema:
+        type: string
+      description: Pagination cursor
+    limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      description: Number of items to return
+    idempotencyKey:
+      name: Idempotency-Key
+      in: header
+      schema:
+        type: string
+        format: uuid
+      description: Idempotency key for safe retries
+
+  responses:
+    UnauthorizedError:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            token_invalid:
+              value:
+                error:
+                  code: AUTH_TOKEN_INVALID
+                  message: Invalid authentication token
+            token_expired:
+              value:
+                error:
+                  code: AUTH_TOKEN_EXPIRED
+                  message: Authentication token has expired
+
+    ForbiddenError:
+      description: Access forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            visibility_forbidden:
+              value:
+                error:
+                  code: VISIBILITY_FORBIDDEN
+                  message: You don't have permission to view this content
+
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            post_not_found:
+              value:
+                error:
+                  code: POST_NOT_FOUND
+                  message: The requested post does not exist
+
+    ValidationError:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            validation_failed:
+              value:
+                error:
+                  code: VALIDATION_FAILED
+                  message: Request validation failed
+                  details:
+                    fields:
+                      - field: email
+                        message: Invalid email format
+
+    ConflictError:
+      description: Resource conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            already_following:
+              value:
+                error:
+                  code: ALREADY_FOLLOWING
+                  message: You are already following this user
+
+    RateLimitError:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            rate_limit:
+              value:
+                error:
+                  code: RATE_LIMIT_EXCEEDED
+                  message: Too many requests, please try again later
+
+security:
+  - bearerAuth: []
+
+paths:
+  /auth/magic-link:
+    post:
+      tags:
+        - auth
+      summary: Send magic link
+      operationId: sendMagicLink
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  maxLength: 255
+      responses:
+        '200':
+          description: Magic link sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Magic link sent to your email
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+
+  /auth/verify:
+    post:
+      tags:
+        - auth
+      summary: Verify magic link token
+      operationId: verifyMagicLink
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - type
+              properties:
+                token:
+                  type: string
+                type:
+                  type: string
+                  enum: [magiclink]
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  refresh_token:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /profiles/{user_id}:
+    get:
+      tags:
+        - profiles
+      summary: Get user profile
+      operationId: getProfile
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    patch:
+      tags:
+        - profiles
+      summary: Update user profile
+      operationId: updateProfile
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                display_name:
+                  type: string
+                  maxLength: 100
+                bio:
+                  type: string
+                  maxLength: 500
+                avatar_url:
+                  type: string
+                  format: uri
+                header_url:
+                  type: string
+                  format: uri
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /posts:
+    post:
+      tags:
+        - posts
+      summary: Create a post
+      operationId: createPost
+      parameters:
+        - $ref: '#/components/parameters/idempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+                - visibility
+                - map_visibility
+              properties:
+                caption:
+                  type: string
+                  maxLength: 2000
+                status:
+                  type: string
+                  enum: [draft, temporary, published]
+                visibility:
+                  type: string
+                  enum: [public, friends, private]
+                map_visibility:
+                  type: string
+                  enum: [none, approx_100m, exact]
+                pin_id:
+                  type: string
+                  format: uuid
+                media:
+                  type: array
+                  maxItems: 10
+                  items:
+                    type: object
+                    required:
+                      - url
+                      - type
+                    properties:
+                      url:
+                        type: string
+                        format: uri
+                      type:
+                        type: string
+                        enum: [image, video]
+                      width:
+                        type: integer
+                      height:
+                        type: integer
+                tags:
+                  type: array
+                  maxItems: 30
+                  items:
+                    type: string
+                    maxLength: 64
+      responses:
+        '201':
+          description: Post created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+
+  /posts/{post_id}:
+    get:
+      tags:
+        - posts
+      summary: Get a post
+      operationId: getPost
+      parameters:
+        - name: post_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Post retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    patch:
+      tags:
+        - posts
+      summary: Update a post
+      operationId: updatePost
+      parameters:
+        - name: post_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                caption:
+                  type: string
+                  maxLength: 2000
+                pin_id:
+                  type: string
+                  format: uuid
+                  nullable: true
+                map_visibility:
+                  type: string
+                  enum: [none, approx_100m, exact]
+      responses:
+        '200':
+          description: Post updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    delete:
+      tags:
+        - posts
+      summary: Delete a post
+      operationId: deletePost
+      parameters:
+        - name: post_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Post deleted successfully
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /posts/timeline:
+    get:
+      tags:
+        - posts
+      summary: Get timeline
+      operationId: getTimeline
+      parameters:
+        - $ref: '#/components/parameters/cursor'
+        - $ref: '#/components/parameters/limit'
+        - name: visibility
+          in: query
+          schema:
+            type: string
+            enum: [public, friends]
+      responses:
+        '200':
+          description: Timeline retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Post'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /media/upload-url:
+    post:
+      tags:
+        - media
+      summary: Get upload URL for media
+      operationId: getUploadUrl
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - file_name
+                - file_type
+                - file_size
+              properties:
+                file_name:
+                  type: string
+                  maxLength: 255
+                file_type:
+                  type: string
+                  enum: [image/jpeg, image/png, image/gif, video/mp4]
+                file_size:
+                  type: integer
+                  maximum: 104857600
+      responses:
+        '200':
+          description: Upload URL generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  upload_url:
+                    type: string
+                    format: uri
+                  media_id:
+                    type: string
+                    format: uuid
+                  expires_at:
+                    type: string
+                    format: date-time
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /users/{user_id}/follow:
+    post:
+      tags:
+        - social
+      summary: Follow a user
+      operationId: followUser
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: User followed successfully
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+
+    delete:
+      tags:
+        - social
+      summary: Unfollow a user
+      operationId: unfollowUser
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: User unfollowed successfully
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /posts/{post_id}/favorite:
+    post:
+      tags:
+        - social
+      summary: Like a post
+      operationId: favoritePost
+      parameters:
+        - name: post_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Post liked successfully
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+
+    delete:
+      tags:
+        - social
+      summary: Unlike a post
+      operationId: unfavoritePost
+      parameters:
+        - name: post_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Post unliked successfully
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /pins:
+    post:
+      tags:
+        - pins
+      summary: Create a pin
+      operationId: createPin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pin'
+      responses:
+        '201':
+          description: Pin created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pin'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /pins/nearby:
+    get:
+      tags:
+        - pins
+      summary: Search nearby pins
+      operationId: searchNearbyPins
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema:
+            type: number
+            minimum: -90
+            maximum: 90
+        - name: lng
+          in: query
+          required: true
+          schema:
+            type: number
+            minimum: -180
+            maximum: 180
+        - name: radius
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 5000
+            default: 1000
+        - $ref: '#/components/parameters/limit'
+      responses:
+        '200':
+          description: Pins retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Pin'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /map/posts:
+    get:
+      tags:
+        - map
+      summary: Get posts for map display
+      operationId: getMapPosts
+      parameters:
+        - name: bounds
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^-?\d+\.?\d*,-?\d+\.?\d*,-?\d+\.?\d*,-?\d+\.?\d*$'
+          description: "SW lat,SW lng,NE lat,NE lng"
+        - name: zoom
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 20
+      responses:
+        '200':
+          description: Map posts retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  posts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        display_point:
+                          $ref: '#/components/schemas/Point'
+                        thumbnail_url:
+                          type: string
+                          format: uri
+                        caption:
+                          type: string
+                        user:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            username:
+                              type: string
+                            avatar_url:
+                              type: string
+                              format: uri
+                  clusters:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        center:
+                          $ref: '#/components/schemas/Point'
+                        count:
+                          type: integer
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'

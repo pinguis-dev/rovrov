@@ -1,0 +1,23 @@
+{
+  "feature_name": "rovrov-sns-app",
+  "created_at": "2025-08-16T22:56:56+0900",
+  "updated_at": "2025-08-21T15:30:00+0900",
+  "language": "japanese",
+  "phase": "tasks-generated",
+  "approvals": {
+    "requirements": {
+      "generated": true,
+      "approved": true
+    },
+    "design": {
+      "generated": true,
+      "approved": true,
+      "notes": "Security-hardened production design: Complete RLS policies for all tables (SELECT/INSERT/UPDATE/DELETE), posts.visibility NULL protection, proper foreign key cascade behavior, external POI deduplication, and pgcrypto extension for UUID generation"
+    },
+    "tasks": {
+      "generated": true,
+      "approved": false
+    }
+  },
+  "ready_for_implementation": true
+}
