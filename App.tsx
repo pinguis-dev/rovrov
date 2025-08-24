@@ -7,63 +7,59 @@ export default function App() {
       <View style={styles.main}>
         <Image
           source={{
-            uri: 'https://docs.expo.dev/static/images/tutorial/splash.png'
+            uri: 'https://docs.expo.dev/static/images/tutorial/splash.png',
           }}
           style={styles.logo}
         />
         <Text style={styles.title}>Welcome to Expo</Text>
-        <Text style={styles.subtitle}>
-          Edit App.tsx to get started
-        </Text>
+        <Text style={styles.subtitle}>Edit App.tsx to get started</Text>
         <View style={styles.separator} />
-        <Text style={styles.description}>
-          Your app is running on {Platform.OS}
-        </Text>
+        <Text style={styles.description}>Your app is running on {Platform.OS}</Text>
       </View>
-      <StatusBar style="auto" />
+      <StatusBar />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#fff',
     alignItems: 'center',
+    backgroundColor: '#fff',
+    flex: 1,
     justifyContent: 'center',
+  },
+  description: {
+    color: '#888',
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  logo: {
+    height: 180,
+    marginBottom: 20,
+    width: 180,
   },
   main: {
     alignItems: 'center',
     justifyContent: 'center',
-    maxWidth: 960,
     marginHorizontal: 'auto',
+    maxWidth: 960,
   },
-  logo: {
-    width: 180,
-    height: 180,
+  separator: {
+    backgroundColor: '#eee',
+    height: 1,
+    marginVertical: 30,
+    width: '80%',
+  },
+  subtitle: {
+    color: '#666',
+    fontSize: 18,
     marginBottom: 20,
+    textAlign: 'center',
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    textAlign: 'center',
     marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 18,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: '80%',
-    backgroundColor: '#eee',
-  },
-  description: {
-    fontSize: 16,
-    color: '#888',
     textAlign: 'center',
   },
 });

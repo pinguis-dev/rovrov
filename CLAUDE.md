@@ -43,6 +43,7 @@ npm test
 ## Architecture Overview
 
 ### Tech Stack
+
 - **React Native 0.73.2** - Cross-platform mobile framework
 - **TypeScript** - Type-safe development
 - **Supabase** - Backend (Auth, Database, Storage)
@@ -51,6 +52,7 @@ npm test
 - **React Native Maps** - Map functionality
 
 ### Project Structure
+
 ```
 src/
 ├── components/     # Reusable UI components
@@ -65,6 +67,7 @@ src/
 ```
 
 ### Key Features Implementation Status
+
 - ✅ Basic project structure
 - ✅ TypeScript configuration
 - ✅ Navigation setup (Bottom tabs)
@@ -78,4 +81,5 @@ src/
 - ⏳ User profiles
 
 ## Development Notes
-*Project-specific development guidance will be added as the codebase grows*
+
+_Project-specific development guidance will be added as the codebase grows_

@@ -47,7 +47,7 @@ async function setupStorageBuckets() {
     console.log(`📁 バケット "${bucket.name}" を作成中...`);
     console.log(`   ${bucket.description}`);
     
-    const { data, error } = await supabase.storage.createBucket(
+    const { error } = await supabase.storage.createBucket(
       bucket.name, 
       {
         public: bucket.public,

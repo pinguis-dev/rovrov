@@ -9,13 +9,15 @@ BE-004実装完了後のSupabaseセキュリティ監査で発見された警告
 ### 🔴 ERROR レベル (優先度: 高)
 
 #### 1. Auth Users Exposed
+
 - **問題**: `auth.users`テーブルへの直接アクセスが可能
 - **影響範囲**: 認証システム全体のセキュリティリスク
-- **修正内容**: 
+- **修正内容**:
   - `auth.users`テーブルのRLSポリシー適用
   - 必要な場合はビューを作成して制限されたカラムのみ公開
 
 #### 2. Security Definer Views with RLS Disabled
+
 - **問題**: SECURITY DEFINERビューでRLSが無効
 - **影響範囲**: データアクセス制御の迂回可能性
 - **修正内容**:
@@ -23,6 +25,7 @@ BE-004実装完了後のSupabaseセキュリティ監査で発見された警告
   - RLS有効化または適切なアクセス制御の実装
 
 #### 3. RLS Disabled on Tables with Data
+
 - **問題**: データが存在するテーブルでRLSが無効
 - **影響範囲**: 不正なデータアクセスリスク
 - **修正内容**:
@@ -34,6 +37,7 @@ BE-004実装完了後のSupabaseセキュリティ監査で発見された警告
 #### 4. Function Search Path Mutable (17件)
 
 **トリガー関数群 (BE-004で新規作成)**:
+
 - `calculate_display_point()`
 - `set_published_at()`
 - `update_favorite_count()`
@@ -43,6 +47,7 @@ BE-004実装完了後のSupabaseセキュリティ監査で発見された警告
 - `create_mutual_friends()`
 
 **その他既存関数群 (BE-002/BE-003で作成)**:
+
 - `handle_new_user()`
 - `update_friendship_status()`
 - `update_user_updated_at()`
@@ -55,6 +60,7 @@ BE-004実装完了後のSupabaseセキュリティ監査で発見された警告
 - `update_repost_updated_at()`
 
 **修正内容**:
+
 - 各関数の`search_path`を明示的に設定
 - SQLインジェクション攻撃対策の強化
 - 関数定義に`SET search_path = ''`または適切なスキーマパスを追加
@@ -62,6 +68,7 @@ BE-004実装完了後のSupabaseセキュリティ監査で発見された警告
 ## 修正例
 
 ### 関数のsearch_path修正例
+
 ```sql
 -- 修正前
 CREATE OR REPLACE FUNCTION calculate_display_point()
@@ -69,7 +76,7 @@ RETURNS TRIGGER AS $$
 -- 関数本体
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 修正後  
+-- 修正後
 CREATE OR REPLACE FUNCTION calculate_display_point()
 RETURNS TRIGGER AS $$
 -- 関数本体
@@ -78,6 +85,7 @@ SET search_path = '';
 ```
 
 ### RLSポリシー追加例
+
 ```sql
 -- auth.usersテーブルのRLS有効化
 ALTER TABLE auth.users ENABLE ROW LEVEL SECURITY;
@@ -104,7 +112,7 @@ CREATE POLICY "Users can view own data" ON auth.users
 ## 関連タスク
 
 - BE-002: データベーススキーマ実装
-- BE-003: RLSポリシー実装  
+- BE-003: RLSポリシー実装
 - BE-004: データベーストリガー実装
 
 ## テストケース
@@ -112,10 +120,11 @@ CREATE POLICY "Users can view own data" ON auth.users
 ### 1. ERROR レベル - Auth Users Exposed テスト
 
 #### TC-001: auth.usersテーブル直接アクセス制御テスト（正常系）
+
 - **テストID**: TC-001
 - **テスト名**: 認証済みユーザーの自身データアクセス
 - **目的**: auth.usersテーブルのRLSポリシーが適切に機能することを検証
-- **前提条件**: 
+- **前提条件**:
   - auth.usersテーブルにRLSが有効化されている
   - 適切なRLSポリシーが設定されている
 - **テスト手順**:
@@ -127,10 +136,11 @@ CREATE POLICY "Users can view own data" ON auth.users
 - **テスト種別**: Integration
 
 #### TC-002: auth.usersテーブル直接アクセス制御テスト（異常系）
+
 - **テストID**: TC-002
 - **テスト名**: 他ユーザーデータへの不正アクセス拒否
 - **目的**: 他ユーザーのauth.usersデータにアクセスできないことを検証
-- **前提条件**: 
+- **前提条件**:
   - 複数のユーザーがauth.usersテーブルに存在
   - RLSポリシーが有効
 - **テスト手順**:
@@ -142,6 +152,7 @@ CREATE POLICY "Users can view own data" ON auth.users
 - **テスト種別**: Security
 
 #### TC-003: 未認証ユーザーのauth.usersアクセステスト
+
 - **テストID**: TC-003
 - **テスト名**: 未認証状態でのauth.usersアクセス制御
 - **目的**: 未認証ユーザーがauth.usersテーブルにアクセスできないことを検証
@@ -157,6 +168,7 @@ CREATE POLICY "Users can view own data" ON auth.users
 ### 2. ERROR レベル - Security Definer Views with RLS Disabled テスト
 
 #### TC-004: Security Definer ビューの特定と修正検証
+
 - **テストID**: TC-004
 - **テスト名**: Security Definer ビューのRLS有効化確認
 - **目的**: 全てのSECURITY DEFINERビューでRLSが適切に有効化されていることを検証
@@ -170,10 +182,11 @@ CREATE POLICY "Users can view own data" ON auth.users
 - **テスト種別**: Security
 
 #### TC-005: public_profilesビューアクセステスト
+
 - **テストID**: TC-005
 - **テスト名**: public_profilesビューの適切なデータフィルタリング
 - **目的**: public_profilesビューが適切にデータをフィルタリングしていることを検証
-- **前提条件**: 
+- **前提条件**:
   - public_profilesビューが存在
   - 異なるstatus（active, suspended, pending_deletion, deleted）のprofilesレコードが存在
 - **テスト手順**:
@@ -187,6 +200,7 @@ CREATE POLICY "Users can view own data" ON auth.users
 ### 3. ERROR レベル - RLS Disabled on Tables with Data テスト
 
 #### TC-006: 全テーブルのRLS有効化確認
+
 - **テストID**: TC-006
 - **テスト名**: データ存在テーブルのRLS有効化状態確認
 - **目的**: データが存在する全てのテーブルでRLSが有効化されていることを検証
@@ -200,10 +214,11 @@ CREATE POLICY "Users can view own data" ON auth.users
 - **テスト種別**: Security
 
 #### TC-007: postsテーブルRLSポリシーテスト（オーナー権限）
+
 - **テストID**: TC-007
 - **テスト名**: 投稿所有者の自投稿アクセス権限
 - **目的**: 投稿オーナーが自分の投稿にアクセスできることを検証
-- **前提条件**: 
+- **前提条件**:
   - postsテーブルにRLSポリシーが設定済み
   - テスト用投稿が存在
 - **テスト手順**:
@@ -215,10 +230,11 @@ CREATE POLICY "Users can view own data" ON auth.users
 - **テスト種別**: Integration
 
 #### TC-008: postsテーブルRLSポリシーテスト（友達権限）
+
 - **テストID**: TC-008
 - **テスト名**: 友達の投稿へのアクセス権限制御
 - **目的**: 友達関係があるユーザーのfriends限定投稿にアクセスできることを検証
-- **前提条件**: 
+- **前提条件**:
   - 2つのユーザー間に友達関係が成立している
   - visibility='friends'の投稿が存在
 - **テスト手順**:
@@ -230,10 +246,11 @@ CREATE POLICY "Users can view own data" ON auth.users
 - **テスト種別**: Integration
 
 #### TC-009: postsテーブルRLSポリシーテスト（非友達アクセス拒否）
+
 - **テストID**: TC-009
 - **テスト名**: 非友達による友達限定投稿アクセス拒否
 - **目的**: 友達関係がないユーザーがfriends限定投稿にアクセスできないことを検証
-- **前提条件**: 
+- **前提条件**:
   - 友達関係がない2ユーザーが存在
   - visibility='friends'の投稿が存在
 - **テスト手順**:
@@ -245,10 +262,11 @@ CREATE POLICY "Users can view own data" ON auth.users
 - **テスト種別**: Security
 
 #### TC-010: ブロック関係によるアクセス制御テスト
+
 - **テストID**: TC-010
 - **テスト名**: ブロック関係による全投稿アクセス拒否
 - **目的**: ブロック関係があるユーザー間で投稿が相互に非表示になることを検証
-- **前提条件**: 
+- **前提条件**:
   - blocksテーブルにブロック関係が設定されている
   - 両ユーザーの投稿が存在
 - **テスト手順**:
@@ -261,34 +279,36 @@ CREATE POLICY "Users can view own data" ON auth.users
 - **テスト種別**: Security
 
 #### TC-011: モデレーション状態による投稿表示制御テスト
+
 - **テストID**: TC-011
 - **テスト名**: suspendedユーザー投稿の第三者非表示確認
 - **目的**: suspendedステータスのユーザー投稿が第三者から見えないことを検証
-- **前提条件**: 
+- **前提条件**:
   - ユーザーAがstatus='suspended'
   - ユーザーAの投稿が存在
 - **テスト手順**:
   1. ユーザーAを suspended 状態に変更
   2. ユーザーBでログインしてユーザーAの投稿を検索
   3. ユーザーAでログインして自分の投稿を確認
-- **期待結果**: 
+- **期待結果**:
   - ユーザーB: ユーザーAの投稿は非表示
   - ユーザーA: 自分の投稿は閲覧可能
 - **優先度**: High
 - **テスト種別**: Functional
 
 #### TC-012: media_filesテーブルRLSテスト
+
 - **テストID**: TC-012
 - **テスト名**: メディアファイルの可視性制御
 - **目的**: media_filesテーブルのRLSポリシーが親投稿の可視性を継承していることを検証
-- **前提条件**: 
+- **前提条件**:
   - media_filesにRLSポリシー設定済み
   - 異なるvisibilityの投稿に紐づくメディアファイルが存在
 - **テスト手順**:
   1. public投稿のメディアファイルに未認証でアクセス
   2. friends投稿のメディアファイルに非友達ユーザーでアクセス
   3. private投稿のメディアファイルに第三者でアクセス
-- **期待結果**: 
+- **期待結果**:
   - public: 未認証でもアクセス可能
   - friends: 友達のみアクセス可能
   - private: オーナーのみアクセス可能
@@ -298,6 +318,7 @@ CREATE POLICY "Users can view own data" ON auth.users
 ### 4. WARNING レベル - Function Search Path Mutable テスト
 
 #### TC-013: 全関数のsearch_path設定確認
+
 - **テストID**: TC-013
 - **テスト名**: 17関数のsearch_path明示設定確認
 - **目的**: 指定された全関数にsearch_pathが適切に設定されていることを検証
@@ -310,6 +331,7 @@ CREATE POLICY "Users can view own data" ON auth.users
 - **テスト種別**: Security
 
 #### TC-014: トリガー関数のSQLインジェクション耐性テスト
+
 - **テストID**: TC-014
 - **テスト名**: calculate_display_point関数のSQLインジェクション対策確認
 - **目的**: search_path設定によりSQLインジェクション攻撃が防がれることを検証
@@ -323,6 +345,7 @@ CREATE POLICY "Users can view own data" ON auth.users
 - **テスト種別**: Security
 
 #### TC-015: handle_new_user関数のsearch_path検証
+
 - **テストID**: TC-015
 - **テスト名**: 新規ユーザー作成時のトリガー関数セキュリティ
 - **目的**: handle_new_user関数が安全に実行されることを検証
@@ -336,10 +359,11 @@ CREATE POLICY "Users can view own data" ON auth.users
 - **テスト種別**: Integration
 
 #### TC-016: updated_atトリガー関数群のsearch_path検証
+
 - **テストID**: TC-016
 - **テスト名**: updated_atトリガー関数のセキュリティ確認
 - **目的**: 各テーブルのupdated_atトリガー関数が安全に動作することを検証
-- **前提条件**: 
+- **前提条件**:
   - 全updated_atトリガー関数にsearch_path設定済み
   - 各テーブルにデータが存在
 - **テスト手順**:
@@ -353,6 +377,7 @@ CREATE POLICY "Users can view own data" ON auth.users
 ### 5. 回帰テスト（既存機能への影響確認）
 
 #### TC-017: 投稿作成機能の正常動作確認
+
 - **テストID**: TC-017
 - **テスト名**: セキュリティ修正後の投稿作成機能
 - **目的**: セキュリティ修正が投稿作成機能に悪影響を与えていないことを確認
@@ -367,10 +392,11 @@ CREATE POLICY "Users can view own data" ON auth.users
 - **テスト種別**: Functional
 
 #### TC-018: タイムライン表示機能の正常動作確認
+
 - **テストID**: TC-018
 - **テスト名**: タイムライン投稿表示の権限制御確認
 - **目的**: タイムラインに適切な権限の投稿のみ表示されることを確認
-- **前提条件**: 
+- **前提条件**:
   - 異なる権限設定の投稿が複数存在
   - 友達関係、ブロック関係が設定済み
 - **テスト手順**:
@@ -382,6 +408,7 @@ CREATE POLICY "Users can view own data" ON auth.users
 - **テスト種別**: Integration
 
 #### TC-019: 友達申請・承認機能の正常動作確認
+
 - **テストID**: TC-019
 - **テスト名**: 友達関係管理機能の動作確認
 - **目的**: 友達申請、承認、解除機能が正常動作することを確認
@@ -396,6 +423,7 @@ CREATE POLICY "Users can view own data" ON auth.users
 - **テスト種別**: Integration
 
 #### TC-020: ユーザープロファイル管理の正常動作確認
+
 - **テストID**: TC-020
 - **テスト名**: プロファイル更新機能の動作確認
 - **目的**: プロファイル情報の更新が正常に動作することを確認
@@ -411,10 +439,11 @@ CREATE POLICY "Users can view own data" ON auth.users
 ### 6. パフォーマンステスト
 
 #### TC-021: RLSポリシー適用時のクエリパフォーマンス
+
 - **テストID**: TC-021
 - **テスト名**: RLS有効化によるクエリパフォーマンス影響測定
 - **目的**: RLSポリシーがクエリパフォーマンスに与える影響を測定
-- **前提条件**: 
+- **前提条件**:
   - 大量のテストデータが存在
   - RLSポリシーが全テーブルに適用済み
 - **テスト手順**:
@@ -426,10 +455,11 @@ CREATE POLICY "Users can view own data" ON auth.users
 - **テスト種別**: Performance
 
 #### TC-022: 大量データでのRLSポリシー動作確認
+
 - **テストID**: TC-022
 - **テスト名**: スケール環境でのRLSポリシー動作
 - **目的**: 大量データ環境でRLSポリシーが正常動作することを確認
-- **前提条件**: 
+- **前提条件**:
   - 1万件以上の投稿データ
   - 1000人以上のユーザーデータ
 - **テスト手順**:
@@ -443,6 +473,7 @@ CREATE POLICY "Users can view own data" ON auth.users
 ### 7. エラーハンドリングテスト
 
 #### TC-023: 不正なauth.uid()でのアクセステスト
+
 - **テストID**: TC-023
 - **テスト名**: 不正なauth.uid()による異常系処理
 - **目的**: 不正なauth.uid()値でのアクセス時の適切なエラーハンドリングを確認
@@ -456,6 +487,7 @@ CREATE POLICY "Users can view own data" ON auth.users
 - **テスト種別**: Error Handling
 
 #### TC-024: トリガー関数実行時のエラーハンドリング
+
 - **テストID**: TC-024
 - **テスト名**: トリガー関数エラー時の適切な処理
 - **目的**: トリガー関数でエラーが発生した際の適切な処理を確認
@@ -471,21 +503,24 @@ CREATE POLICY "Users can view own data" ON auth.users
 ### テスト実行計画
 
 #### Phase 1: Critical Security Tests (Priority: Critical)
+
 - TC-001, TC-002, TC-003: Auth Users Exposed tests
 - TC-006, TC-007: RLS Disabled tests
-実行期間: 1日
+  実行期間: 1日
 
-#### Phase 2: High Priority Integration Tests (Priority: High) 
+#### Phase 2: High Priority Integration Tests (Priority: High)
+
 - TC-004, TC-005: Security Definer Views tests
 - TC-008, TC-009, TC-010, TC-011, TC-012: RLS Policy tests
 - TC-017, TC-018, TC-019, TC-020: Regression tests
-実行期間: 2日
+  実行期間: 2日
 
 #### Phase 3: Medium Priority Tests (Priority: Medium)
+
 - TC-013, TC-014, TC-015, TC-016: Function Search Path tests
 - TC-021, TC-022: Performance tests
 - TC-023, TC-024: Error Handling tests
-実行期間: 1日
+  実行期間: 1日
 
 ### テスト環境要件
 
@@ -511,11 +546,13 @@ CREATE POLICY "Users can view own data" ON auth.users
 ### 技術的アプローチ
 
 #### 1. 開発環境の準備
+
 - **Supabase Branchの活用**: 本番環境への影響を防ぐため、開発ブランチで全修正を実施
 - **テストデータの準備**: 各種権限パターンを網羅したテストデータセットの構築
 - **監査ツールの設定**: Supabase Advisorsの定期実行環境の構築
 
 #### 2. 修正の原則
+
 - **最小権限の原則**: 各エンティティに必要最小限のアクセス権限のみ付与
 - **防御的プログラミング**: search_pathの明示、スキーマ修飾名の使用
 - **段階的適用**: Critical → High → Medium の優先度順で修正
@@ -526,39 +563,40 @@ CREATE POLICY "Users can view own data" ON auth.users
 #### Phase 1: 事前準備と影響調査（1日目）
 
 ##### 1.1 現状把握と文書化
+
 ```sql
 -- 現在のセキュリティ状態を完全に記録
 -- 1. auth.usersテーブルのアクセス権限確認
-SELECT 
-    grantee, 
-    privilege_type 
-FROM information_schema.table_privileges 
-WHERE table_schema = 'auth' 
+SELECT
+    grantee,
+    privilege_type
+FROM information_schema.table_privileges
+WHERE table_schema = 'auth'
     AND table_name = 'users';
 
 -- 2. RLS無効テーブルの特定
-SELECT 
-    schemaname, 
-    tablename, 
-    rowsecurity 
-FROM pg_tables 
-WHERE schemaname IN ('public', 'auth') 
+SELECT
+    schemaname,
+    tablename,
+    rowsecurity
+FROM pg_tables
+WHERE schemaname IN ('public', 'auth')
     AND rowsecurity = false;
 
 -- 3. SECURITY DEFINER関数とビューの特定
-SELECT 
-    proname, 
+SELECT
+    proname,
     prosecdef,
     proconfig
-FROM pg_proc 
+FROM pg_proc
 WHERE prosecdef = true;
 
 -- 4. search_path未設定関数のリスト化
-SELECT 
+SELECT
     proname
-FROM pg_proc 
+FROM pg_proc
 WHERE proname IN (
-    'calculate_display_point', 'set_published_at', 
+    'calculate_display_point', 'set_published_at',
     'update_favorite_count', 'update_repost_count',
     'update_posts_count', 'validate_media_visibility',
     'create_mutual_friends', 'handle_new_user',
@@ -568,12 +606,13 @@ WHERE proname IN (
     'update_post_updated_at', 'update_favorite_updated_at',
     'update_repost_updated_at'
 ) AND NOT EXISTS (
-    SELECT 1 FROM unnest(proconfig) AS c 
+    SELECT 1 FROM unnest(proconfig) AS c
     WHERE c LIKE 'search_path=%'
 );
 ```
 
 ##### 1.2 バックアップの作成
+
 - データベーススキーマの完全バックアップ
 - 既存関数定義のエクスポート
 - RLSポリシーの現状記録
@@ -585,7 +624,7 @@ WHERE proname IN (
 ```sql
 -- Step 1: public_profiles ビューの作成（安全な情報のみ公開）
 CREATE OR REPLACE VIEW public.public_profiles AS
-SELECT 
+SELECT
     p.id,
     p.username,
     p.display_name,
@@ -618,11 +657,11 @@ GRANT SELECT (id, email) ON auth.users TO service_role;
 
 ```sql
 -- Step 1: 既存のSECURITY DEFINERビューを特定
-SELECT 
+SELECT
     schemaname,
     viewname,
     viewowner
-FROM pg_views 
+FROM pg_views
 WHERE definition ILIKE '%SECURITY DEFINER%';
 
 -- Step 2: 各ビューに対してRLS適用または再定義
@@ -630,26 +669,26 @@ WHERE definition ILIKE '%SECURITY DEFINER%';
 DROP VIEW IF EXISTS public_posts_view CASCADE;
 
 CREATE VIEW public_posts_view AS
-SELECT 
+SELECT
     p.*,
     pr.username,
     pr.display_name,
     pr.avatar_url
 FROM posts p
 JOIN profiles pr ON p.user_id = pr.id
-WHERE 
+WHERE
     -- RLSロジックをビュー定義に組み込む
     (p.visibility = 'public' AND p.status = 'published')
     OR (p.visibility = 'friends' AND EXISTS (
-        SELECT 1 FROM friends 
-        WHERE status = 'accepted' 
+        SELECT 1 FROM friends
+        WHERE status = 'accepted'
             AND ((user_id = p.user_id AND friend_id = auth.uid())
                 OR (friend_id = p.user_id AND user_id = auth.uid()))
     ))
     OR (p.user_id = auth.uid())
     -- ブロック関係の考慮
     AND NOT EXISTS (
-        SELECT 1 FROM blocks 
+        SELECT 1 FROM blocks
         WHERE (blocker_id = auth.uid() AND blocked_id = p.user_id)
             OR (blocked_id = auth.uid() AND blocker_id = p.user_id)
     );
@@ -663,17 +702,17 @@ ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
 ```sql
 -- Step 1: データが存在するがRLS無効のテーブルを特定
 WITH table_data AS (
-    SELECT 
+    SELECT
         schemaname,
         tablename,
         rowsecurity,
-        (SELECT COUNT(*) FROM information_schema.tables t 
-         WHERE t.table_schema = pt.schemaname 
+        (SELECT COUNT(*) FROM information_schema.tables t
+         WHERE t.table_schema = pt.schemaname
            AND t.table_name = pt.tablename) as has_data
     FROM pg_tables pt
     WHERE schemaname = 'public'
 )
-SELECT * FROM table_data 
+SELECT * FROM table_data
 WHERE rowsecurity = false AND has_data > 0;
 
 -- Step 2: 各テーブルに対して適切なRLSポリシーを作成
@@ -712,8 +751,8 @@ BEGIN
     IF NEW.map_visibility = 'none' THEN
         NEW.display_point = NULL;
     ELSIF NEW.pin_id IS NOT NULL THEN
-        SELECT pins.location INTO NEW.display_point 
-        FROM public.pins 
+        SELECT pins.location INTO NEW.display_point
+        FROM public.pins
         WHERE pins.id = NEW.pin_id;
         IF NEW.map_visibility = 'approx_100m' AND NEW.display_point IS NOT NULL THEN
             NEW.display_point = public.ST_SnapToGrid(NEW.display_point::public.geometry, 0.001)::public.geography;
@@ -731,15 +770,15 @@ BEGIN
     INSERT INTO public.profiles (id, email, username)
     VALUES (NEW.id, NEW.email, NEW.email)
     ON CONFLICT (id) DO NOTHING;
-    
+
     INSERT INTO public.user_preferences (user_id)
     VALUES (NEW.id)
     ON CONFLICT (user_id) DO NOTHING;
-    
+
     INSERT INTO public.user_stats (user_id)
     VALUES (NEW.id)
     ON CONFLICT (user_id) DO NOTHING;
-    
+
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER
@@ -786,7 +825,7 @@ BEGIN
     IF NEW.status = 'accepted' AND OLD.status = 'pending' THEN
         NEW.accepted_at = CURRENT_TIMESTAMP;
         -- スキーマ名を明示的に指定
-        UPDATE public.user_stats 
+        UPDATE public.user_stats
         SET friends_count = friends_count + 1
         WHERE user_id IN (NEW.user_id, NEW.friend_id);
     END IF;
@@ -805,52 +844,48 @@ SET search_path = '';
 import { createClient } from '@supabase/supabase-js';
 
 describe('Auth Users Protection Tests', () => {
-    let anonClient: any;
-    let userAClient: any;
-    let userBClient: any;
+  let anonClient: any;
+  let userAClient: any;
+  let userBClient: any;
 
-    beforeAll(async () => {
-        // クライアント初期化
-        anonClient = createClient(SUPABASE_URL, ANON_KEY);
-        userAClient = createClient(SUPABASE_URL, ANON_KEY);
-        userBClient = createClient(SUPABASE_URL, ANON_KEY);
-        
-        // ユーザー認証
-        await userAClient.auth.signIn({ email: 'userA@test.com' });
-        await userBClient.auth.signIn({ email: 'userB@test.com' });
+  beforeAll(async () => {
+    // クライアント初期化
+    anonClient = createClient(SUPABASE_URL, ANON_KEY);
+    userAClient = createClient(SUPABASE_URL, ANON_KEY);
+    userBClient = createClient(SUPABASE_URL, ANON_KEY);
+
+    // ユーザー認証
+    await userAClient.auth.signIn({ email: 'userA@test.com' });
+    await userBClient.auth.signIn({ email: 'userB@test.com' });
+  });
+
+  test('TC-001: 認証済みユーザーの自身データアクセス', async () => {
+    const { data, error } = await userAClient
+      .from('profiles')
+      .select('*')
+      .eq('id', userAClient.auth.user().id)
+      .single();
+
+    expect(error).toBeNull();
+    expect(data).toBeDefined();
+    expect(data.id).toBe(userAClient.auth.user().id);
+  });
+
+  test('TC-002: 他ユーザーデータへの不正アクセス拒否', async () => {
+    const { data, error } = await userAClient.rpc('get_auth_user_data', {
+      target_user_id: userBClient.auth.user().id,
     });
 
-    test('TC-001: 認証済みユーザーの自身データアクセス', async () => {
-        const { data, error } = await userAClient
-            .from('profiles')
-            .select('*')
-            .eq('id', userAClient.auth.user().id)
-            .single();
-        
-        expect(error).toBeNull();
-        expect(data).toBeDefined();
-        expect(data.id).toBe(userAClient.auth.user().id);
-    });
+    expect(data).toBeNull();
+    // エラーまたは空の結果を期待
+  });
 
-    test('TC-002: 他ユーザーデータへの不正アクセス拒否', async () => {
-        const { data, error } = await userAClient
-            .rpc('get_auth_user_data', { 
-                target_user_id: userBClient.auth.user().id 
-            });
-        
-        expect(data).toBeNull();
-        // エラーまたは空の結果を期待
-    });
+  test('TC-003: 未認証ユーザーのauth.usersアクセス制御', async () => {
+    const { data, error } = await anonClient.from('auth.users').select('*').limit(1);
 
-    test('TC-003: 未認証ユーザーのauth.usersアクセス制御', async () => {
-        const { data, error } = await anonClient
-            .from('auth.users')
-            .select('*')
-            .limit(1);
-        
-        expect(error).toBeDefined();
-        expect(error.code).toBe('42501'); // Permission denied
-    });
+    expect(error).toBeDefined();
+    expect(error.code).toBe('42501'); // Permission denied
+  });
 });
 ```
 
@@ -860,7 +895,7 @@ describe('Auth Users Protection Tests', () => {
 -- パフォーマンステスト用クエリ
 -- RLS適用前後の実行計画比較
 EXPLAIN ANALYZE
-SELECT 
+SELECT
     p.*,
     pr.username,
     pr.display_name,
@@ -875,12 +910,12 @@ ORDER BY p.published_at DESC
 LIMIT 20;
 
 -- インデックス最適化の提案
-CREATE INDEX idx_posts_visibility_status_published 
-    ON posts(visibility, status, published_at DESC) 
+CREATE INDEX idx_posts_visibility_status_published
+    ON posts(visibility, status, published_at DESC)
     WHERE status = 'published';
 
-CREATE INDEX idx_friends_accepted 
-    ON friends(user_id, friend_id) 
+CREATE INDEX idx_friends_accepted
+    ON friends(user_id, friend_id)
     WHERE status = 'accepted';
 ```
 
@@ -889,27 +924,23 @@ CREATE INDEX idx_friends_accepted
 ```javascript
 // monitoring/security-audit.js
 const runSecurityAudit = async () => {
-    const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
-    
-    // Supabase Advisorsの実行
-    const securityAdvisors = await supabase
-        .rpc('get_security_advisors');
-    
-    const performanceAdvisors = await supabase
-        .rpc('get_performance_advisors');
-    
-    // 結果をログに記録
-    console.log('Security Issues:', securityAdvisors.data);
-    console.log('Performance Issues:', performanceAdvisors.data);
-    
-    // Critical/Errorレベルの問題があればアラート
-    const criticalIssues = securityAdvisors.data.filter(
-        issue => issue.severity === 'ERROR'
-    );
-    
-    if (criticalIssues.length > 0) {
-        await sendAlert('Critical security issues detected', criticalIssues);
-    }
+  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+  // Supabase Advisorsの実行
+  const securityAdvisors = await supabase.rpc('get_security_advisors');
+
+  const performanceAdvisors = await supabase.rpc('get_performance_advisors');
+
+  // 結果をログに記録
+  console.log('Security Issues:', securityAdvisors.data);
+  console.log('Performance Issues:', performanceAdvisors.data);
+
+  // Critical/Errorレベルの問題があればアラート
+  const criticalIssues = securityAdvisors.data.filter((issue) => issue.severity === 'ERROR');
+
+  if (criticalIssues.length > 0) {
+    await sendAlert('Critical security issues detected', criticalIssues);
+  }
 };
 
 // 日次実行
@@ -959,63 +990,67 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 ```typescript
 // 互換性レイヤーの実装
 class DatabaseAdapter {
-    // 既存のコードとの互換性を保つアダプター
-    async getUserData(userId: string) {
-        // 新しいpublic_profilesビューを使用
-        // しかし既存のインターフェースを維持
-        const { data, error } = await this.supabase
-            .from('public_profiles')
-            .select('*')
-            .eq('id', userId)
-            .single();
-        
-        // 既存のフィールド名にマッピング
-        if (data) {
-            return {
-                ...data,
-                // 互換性のためのフィールドマッピング
-                user_id: data.id,
-                // その他の必要なマッピング
-            };
-        }
-        
-        return null;
+  // 既存のコードとの互換性を保つアダプター
+  async getUserData(userId: string) {
+    // 新しいpublic_profilesビューを使用
+    // しかし既存のインターフェースを維持
+    const { data, error } = await this.supabase
+      .from('public_profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    // 既存のフィールド名にマッピング
+    if (data) {
+      return {
+        ...data,
+        // 互換性のためのフィールドマッピング
+        user_id: data.id,
+        // その他の必要なマッピング
+      };
     }
+
+    return null;
+  }
 }
 ```
 
 ### 成功基準
 
 #### 1. セキュリティ基準
+
 - Supabase Security Advisorsで ERRORレベルの問題が0件
 - WARNINGレベルの問題が修正済み（search_path関連）
 - 全テストケース（TC-001〜TC-024）の合格
 
 #### 2. 機能維持基準
+
 - 既存のAPI呼び出しが全て正常動作
 - ユーザー体験に影響なし
 - データの整合性維持
 
 #### 3. パフォーマンス基準
+
 - 主要クエリの実行時間が500ms以下
 - RLS適用前後でパフォーマンス劣化が20%以内
 - インデックス使用率の維持
 
 #### 4. 運用基準
+
 - ロールバック手順の文書化完了
 - 監視アラートの設定完了
 - インシデント対応手順の確立
 
 ### 実装スケジュール
 
-| 日程 | フェーズ | タスク | 担当 |
-|------|---------|--------|------|
-| Day 1 | 準備 | 現状調査、バックアップ、開発環境準備 | DevOps |
-| Day 2-3 | ERROR修正 | auth.users保護、SECURITY DEFINER修正、RLS有効化 | Backend |
-| Day 4 | WARNING修正 | search_path設定、スキーマ修飾名追加 | Backend |
-| Day 5 | テスト | 全テストケース実行、パフォーマンス測定 | QA |
-| Day 6 | デプロイ準備 | ロールバック準備、監視設定 | DevOps |
-| Day 7 | 本番デプロイ | 段階的デプロイ、監視、検証 | All |
+| 日程    | フェーズ     | タスク                                          | 担当    |
+| ------- | ------------ | ----------------------------------------------- | ------- |
+| Day 1   | 準備         | 現状調査、バックアップ、開発環境準備            | DevOps  |
+| Day 2-3 | ERROR修正    | auth.users保護、SECURITY DEFINER修正、RLS有効化 | Backend |
+| Day 4   | WARNING修正  | search_path設定、スキーマ修飾名追加             | Backend |
+| Day 5   | テスト       | 全テストケース実行、パフォーマンス測定          | QA      |
+| Day 6   | デプロイ準備 | ロールバック準備、監視設定                      | DevOps  |
+| Day 7   | 本番デプロイ | 段階的デプロイ、監視、検証                      | All     |
 
 ### 注意事項
 
@@ -1038,10 +1073,12 @@ class DatabaseAdapter {
 ## テスト実行結果レポート
 
 ### 実行日時
+
 - **初回実行**: 2024-08-24 15:00
 - **修正後実行**: 2024-08-24 16:30
 
 ### テスト環境
+
 - **データベース**: Supabase PostgreSQL
 - **テスト実施者**: QA Execution Manager Agent / 修正実施者
 - **実行方式**: 自動テスト実行 / Supabase Advisors検証
@@ -1065,22 +1102,24 @@ class DatabaseAdapter {
 
 ### 全体サマリー
 
-| カテゴリ | 対象項目 | 修正済み | 未対応 | 修正率 |
-|---------|----------|----------|--------|--------|
-| **ERROR レベル** | 3 | 2 | 1* | 67% |
-| **WARNING レベル** | 17 | 17 | 0 | 100% |
-| **全体** | 20 | 19 | 1 | **95%** |
+| カテゴリ           | 対象項目 | 修正済み | 未対応 | 修正率  |
+| ------------------ | -------- | -------- | ------ | ------- |
+| **ERROR レベル**   | 3        | 2        | 1\*    | 67%     |
+| **WARNING レベル** | 17       | 17       | 0      | 100%    |
+| **全体**           | 20       | 19       | 1      | **95%** |
 
-*spatial_ref_sysテーブルは PostGISシステムテーブルのため管理者権限が必要
+\*spatial_ref_sysテーブルは PostGISシステムテーブルのため管理者権限が必要
 
 ### 🟢 修正完了項目
 
 #### auth.users保護関連
+
 - ✅ auth.usersテーブルへのRLSポリシー追加完了
 - ✅ security_audit_logビューの削除完了
 - ✅ 自身のデータのみアクセス可能なポリシー実装
 
 #### 関数セキュリティ関連
+
 - ✅ calculate_display_point - search_path設定完了
 - ✅ set_published_at - search_path設定完了
 - ✅ update_favorite_count - search_path設定完了
@@ -1095,11 +1134,13 @@ class DatabaseAdapter {
 ### 🟡 残存課題
 
 #### 管理者権限が必要な項目
+
 1. **spatial_ref_sys テーブルのRLS**
    - PostGIS システムテーブルのため、スーパーユーザー権限が必要
    - アプリケーションには影響なし（読み取り専用の参照テーブル）
 
 #### Supabase Advisors検出項目（キャッシュまたは誤検知の可能性）
+
 1. **public_profiles ビューのSECURITY DEFINER**
    - 再作成済みだが引き続き検出される
    - 実際のビュー定義では通常のビューとして確認済み
@@ -1107,6 +1148,7 @@ class DatabaseAdapter {
 ### 修正による改善効果
 
 #### セキュリティレベルの向上
+
 1. **auth.users テーブル保護**
    - 修正前: 全ユーザーデータへの無制限アクセス可能
    - 修正後: 自身のデータのみアクセス可能
@@ -1122,6 +1164,7 @@ class DatabaseAdapter {
 ### テスト失敗の根本原因分析
 
 #### テスト環境とアプリケーション環境の相違
+
 初回テストが全て失敗した原因は、以下の環境差異による可能性が高い：
 
 1. **BE-002/BE-003の実装状態**
@@ -1137,11 +1180,13 @@ class DatabaseAdapter {
    - auth.usersのRLSポリシー追加（実施済み）
    - 関数のsearch_path設定（実施済み）
    - 不要なビューの削除（実施済み）
+
 ### 実装マイグレーション一覧
 
 #### 修正実施済みマイグレーション
+
 1. `fix_auth_users_exposure` - auth.users露出の修正
-2. `fix_auth_users_rls_policies` - auth.usersのRLSポリシー追加  
+2. `fix_auth_users_rls_policies` - auth.usersのRLSポリシー追加
 3. `fix_function_search_path` - トリガー関数のsearch_path設定
 4. `fix_helper_function_search_path` - ヘルパー関数のsearch_path設定
 5. `fix_public_profiles_security_definer_final` - public_profilesビュー再作成
@@ -1153,6 +1198,7 @@ class DatabaseAdapter {
 ### 今後の推奨事項
 
 #### 継続的セキュリティ監視
+
 1. **定期的なSupabase Advisors実行**
    - 週次でセキュリティ監査を実施
    - 新規開発後は必ず実行
@@ -1170,11 +1216,13 @@ class DatabaseAdapter {
 セキュリティ修正を実施し、Supabase Advisorsで検証した結果、主要なセキュリティ問題は解決されました。
 
 **修正完了項目**:
+
 - auth.usersテーブルの適切な保護
 - 全17関数のsearch_path設定
 - 不要なセキュリティリスクビューの削除
 
 **残存項目**:
+
 - spatial_ref_sys（管理者権限必要、アプリ影響なし）
 - public_profiles（誤検知の可能性）
 
