@@ -1,0 +1,1 @@
+// TypeScript型定義

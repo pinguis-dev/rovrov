@@ -1,0 +1,32 @@
+# Claude Code directories
+.claude/
+.kiro/
+.serena/
+
+# Dependencies
+node_modules/
+
+# Build outputs
+.expo/
+.expo-shared/
+web-build/
+dist/
+
+# Generated files
+*.d.ts
+*.log
+
+# Config files that shouldn't be formatted
+babel.config.js
+metro.config.js
+.eslintrc.js
+
+# Temporary files
+setup-*.ts
+setup-*.js
+
+# Task files (specific problematic ones)
+tasks/BE-001.md
+tasks/BE-003.md
+tasks/BE-009.md
+tasks/FE-006.md
