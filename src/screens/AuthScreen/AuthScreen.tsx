@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AnimatedCityNames } from '../../components/AnimatedCityNames';
 import { useAuthStore } from '../../store/authStore';
 import { colors } from '../../styles/colors';
 import { AuthState } from '../../types/auth';
@@ -67,6 +68,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = () => {
 
       return () => clearInterval(timer);
     }
+    return undefined;
   }, [emailSent, fadeAnim]);
 
   const handleSendMagicLink = async () => {
@@ -248,7 +250,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = () => {
             <View style={styles.content}>
               <View style={styles.logoContainer}>
                 <Text style={styles.logo}>rovrov</Text>
-                <Text style={styles.tagline}>毎日の幸せを共有</Text>
+                <AnimatedCityNames />
               </View>
 
               <View style={styles.formContainer}>
