@@ -41,6 +41,15 @@ module.exports = {
       varsIgnorePattern: '^_',
     }],
     '@typescript-eslint/no-use-before-define': ['error', { functions: false, variables: false }],
+    '@typescript-eslint/no-unsafe-assignment': 'warn',
+    '@typescript-eslint/no-unsafe-member-access': 'warn',
+    '@typescript-eslint/no-unsafe-call': 'warn',
+    '@typescript-eslint/no-unsafe-argument': 'warn',
+    '@typescript-eslint/no-unsafe-return': 'warn',
+    '@typescript-eslint/no-shadow': 'warn',
+    '@typescript-eslint/no-throw-literal': 'warn',
+    '@typescript-eslint/no-floating-promises': 'warn',
+    '@typescript-eslint/no-unnecessary-type-assertion': 'warn',
     
     // React/React Native最適化
     'react/jsx-filename-extension': ['error', { extensions: ['.tsx'] }],
@@ -52,6 +61,8 @@ module.exports = {
     'react-native/no-unused-styles': 'error',
     'react-native/split-platform-components': 'error',
     'react-native/no-color-literals': 'warn',
+    'react/style-prop-object': 'warn',
+    'react-hooks/exhaustive-deps': 'warn',
     
     // インポート順序
     'import/order': ['error', {
@@ -82,6 +93,10 @@ module.exports = {
     'no-console': ['warn', { allow: ['warn', 'error'] }],
     'no-debugger': 'error',
     'import/prefer-default-export': 'off',
+    'no-void': 'warn',
+    'no-nested-ternary': 'warn',
+    'consistent-return': 'warn',
+    'radix': 'warn',
   },
   settings: {
     react: {

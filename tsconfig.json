@@ -1,7 +1,6 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    // 厳格モード設定
     "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
@@ -10,15 +9,11 @@
     "strictPropertyInitialization": true,
     "noImplicitThis": true,
     "alwaysStrict": true,
-
-    // 追加の型チェック
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
-
-    // モジュール解決
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
@@ -32,8 +27,6 @@
       "@types/*": ["src/types/*"],
       "@assets/*": ["src/assets/*"]
     },
-
-    // React Native/Expo対応
     "jsx": "react-jsx",
     "module": "esnext",
     "target": "esnext",
@@ -44,15 +37,13 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-
-    // 開発効率化
     "incremental": true,
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
     "removeComments": false
   },
-  "include": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
+  "include": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
   "exclude": [
     "node_modules",
     "babel.config.js",

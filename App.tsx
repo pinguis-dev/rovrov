@@ -1,69 +1,70 @@
+import { useEffect } from 'react';
+
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, Image, Platform } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+import { AuthScreen } from './src/screens/AuthScreen';
+import { useAuthStore } from './src/store/authStore';
+import { colors } from './src/styles/colors';
+import { setupDeepLinkListener } from './src/utils/deepLinkHandler';
 
 export default function App() {
-  return (
-    <View style={styles.container}>
-      <View style={styles.main}>
-        <Image
-          source={{
-            uri: 'https://docs.expo.dev/static/images/tutorial/splash.png'
-          }}
-          style={styles.logo}
-        />
-        <Text style={styles.title}>Welcome to Expo</Text>
-        <Text style={styles.subtitle}>
-          Edit App.tsx to get started
-        </Text>
-        <View style={styles.separator} />
-        <Text style={styles.description}>
-          Your app is running on {Platform.OS}
-        </Text>
+  const { isAuthenticated, isLoading, checkSession } = useAuthStore();
+
+  useEffect(() => {
+    checkSession();
+    const cleanup = setupDeepLinkListener();
+    return cleanup;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // checkSession を依存配列から除外
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.neutral[700]} />
       </View>
-      <StatusBar style="auto" />
-    </View>
+    );
+  }
+
+  return (
+    <SafeAreaProvider>
+      {!isAuthenticated ? (
+        <AuthScreen
+          onAuthSuccess={() => {
+            // Authentication successful
+          }}
+        />
+      ) : (
+        <View style={styles.container}>
+          <View style={styles.tempContainer}>
+            <Text style={styles.tempText}>認証済み - Timeline画面を実装予定</Text>
+          </View>
+        </View>
+      )}
+      <StatusBar style="dark" />
+    </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    backgroundColor: colors.neutral[0],
     flex: 1,
-    backgroundColor: '#fff',
+  },
+  loadingContainer: {
     alignItems: 'center',
+    backgroundColor: colors.neutral[0],
+    flex: 1,
     justifyContent: 'center',
   },
-  main: {
+  tempContainer: {
     alignItems: 'center',
+    flex: 1,
     justifyContent: 'center',
-    maxWidth: 960,
-    marginHorizontal: 'auto',
   },
-  logo: {
-    width: 180,
-    height: 180,
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 18,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: '80%',
-    backgroundColor: '#eee',
-  },
-  description: {
+  tempText: {
+    color: colors.neutral[600],
     fontSize: 16,
-    color: '#888',
-    textAlign: 'center',
   },
 });
