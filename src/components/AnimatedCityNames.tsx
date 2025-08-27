@@ -1,53 +1,54 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 import { Animated, StyleSheet, View } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const CITIES = [
-  'Tokyo',
+  '東京', // Tokyo
   'New York',
   'London',
   'Paris',
   'Sydney',
   'Berlin',
   'Singapore',
-  'Dubai',
-  'Mumbai',
-  'Seoul',
+  'دبي', // Dubai
+  'मुंबई', // Mumbai
+  '서울', // Seoul
   'Barcelona',
   'Toronto',
   'Amsterdam',
-  'Hong Kong',
-  'Bangkok',
-  'Rome',
+  '香港', // Hong Kong
+  'กรุงเทพฯ', // Bangkok
+  'Roma', // Rome
   'Stockholm',
-  'Vienna',
-  'Prague',
-  'Copenhagen',
+  'Wien', // Vienna
+  'Praha', // Prague
+  'København', // Copenhagen
   'San Francisco',
   'Los Angeles',
   'Chicago',
   'Boston',
   'Seattle',
   'Melbourne',
-  'Lisbon',
+  'Lisboa', // Lisbon
   'Dublin',
-  'Brussels',
+  'Bruxelles', // Brussels
   'Madrid',
-  'Milan',
-  'Munich',
-  'Zurich',
+  'Milano', // Milan
+  'München', // Munich
+  'Zürich', // Zurich
   'Oslo',
   'Helsinki',
-  'Shanghai',
-  'Beijing',
+  '上海', // Shanghai
+  '北京', // Beijing
   'Jakarta',
-  'Istanbul',
-  'Moscow',
+  'İstanbul', // Istanbul
+  'Москва', // Moscow
   'São Paulo',
   'Buenos Aires',
-  'Mexico City',
-  'Cairo',
-  'Tel Aviv',
+  'Ciudad de México', // Mexico City
+  'القاهرة', // Cairo
+  'תל אביב', // Tel Aviv
 ];
 
 export const AnimatedCityNames: React.FC = () => {
@@ -116,17 +117,18 @@ export const AnimatedCityNames: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <Animated.Text
+      <Animated.View
         style={[
-          styles.cityText,
+          styles.contentWrapper,
           {
             opacity: fadeAnim,
             transform: [{ translateY: slideAnim }],
           },
         ]}
       >
-        {currentCity}
-      </Animated.Text>
+        <Icon name="location-on" size={14} color="#999" style={styles.icon} />
+        <Animated.Text style={styles.cityText}>{currentCity}</Animated.Text>
+      </Animated.View>
     </View>
   );
 };
@@ -142,5 +144,13 @@ const styles = StyleSheet.create({
     height: 24,
     justifyContent: 'center',
     overflow: 'hidden',
+  },
+  contentWrapper: {
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
+  icon: {
+    marginRight: 3,
+    opacity: 0.5, // Make icon more subtle
   },
 });
