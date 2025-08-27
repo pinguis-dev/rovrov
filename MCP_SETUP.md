@@ -5,6 +5,7 @@ This project is configured to use the Supabase MCP server with Claude Code, allo
 ## Setup Instructions
 
 1. **Create your `.env` file** (copy from `.env.example`):
+
    ```bash
    cp .env.example .env
    ```
@@ -14,6 +15,7 @@ This project is configured to use the Supabase MCP server with Claude Code, allo
    - Navigate to: Project Settings → API → Project URL and Project API keys
 
 3. **Install the Supabase MCP server** (if not already installed globally):
+
    ```bash
    npm install -g @supabase/mcp-server
    ```
@@ -28,6 +30,7 @@ This project is configured to use the Supabase MCP server with Claude Code, allo
 ## What this enables
 
 With the Supabase MCP server configured, Claude Code can:
+
 - Query your Supabase database directly
 - View table schemas and data
 - Help with database migrations and queries
