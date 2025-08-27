@@ -77,4 +77,7 @@ logs
 
 # Temporary files
 tmp/
-temp/
+temp/.expo/prebuild/
+ios/Podfile.lock
+ios/rovrov.xcworkspace/
+ios/rovrov/PrivacyInfo.xcprivacy

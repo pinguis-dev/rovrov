@@ -32,7 +32,8 @@ module.exports = function(api) {
           },
         },
       ],
-      'react-native-reanimated/plugin',
+      // react-native-worklets/plugin must be listed last
+      'react-native-worklets/plugin',
     ],
   };
 };

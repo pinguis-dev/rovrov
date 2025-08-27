@@ -1,65 +1,70 @@
+import { useEffect } from 'react';
+
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, Image, Platform } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+import { AuthScreen } from './src/screens/AuthScreen';
+import { useAuthStore } from './src/store/authStore';
+import { colors } from './src/styles/colors';
+import { setupDeepLinkListener } from './src/utils/deepLinkHandler';
 
 export default function App() {
-  return (
-    <View style={styles.container}>
-      <View style={styles.main}>
-        <Image
-          source={{
-            uri: 'https://docs.expo.dev/static/images/tutorial/splash.png',
-          }}
-          style={styles.logo}
-        />
-        <Text style={styles.title}>Welcome to Expo</Text>
-        <Text style={styles.subtitle}>Edit App.tsx to get started</Text>
-        <View style={styles.separator} />
-        <Text style={styles.description}>Your app is running on {Platform.OS}</Text>
+  const { isAuthenticated, isLoading, checkSession } = useAuthStore();
+
+  useEffect(() => {
+    checkSession();
+    const cleanup = setupDeepLinkListener();
+    return cleanup;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // checkSession を依存配列から除外
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.neutral[700]} />
       </View>
-      <StatusBar />
-    </View>
+    );
+  }
+
+  return (
+    <SafeAreaProvider>
+      {!isAuthenticated ? (
+        <AuthScreen
+          onAuthSuccess={() => {
+            // Authentication successful
+          }}
+        />
+      ) : (
+        <View style={styles.container}>
+          <View style={styles.tempContainer}>
+            <Text style={styles.tempText}>認証済み - Timeline画面を実装予定</Text>
+          </View>
+        </View>
+      )}
+      <StatusBar style="dark" />
+    </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    backgroundColor: colors.neutral[0],
+    flex: 1,
+  },
+  loadingContainer: {
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.neutral[0],
     flex: 1,
     justifyContent: 'center',
   },
-  description: {
-    color: '#888',
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  logo: {
-    height: 180,
-    marginBottom: 20,
-    width: 180,
-  },
-  main: {
+  tempContainer: {
     alignItems: 'center',
+    flex: 1,
     justifyContent: 'center',
-    marginHorizontal: 'auto',
-    maxWidth: 960,
   },
-  separator: {
-    backgroundColor: '#eee',
-    height: 1,
-    marginVertical: 30,
-    width: '80%',
-  },
-  subtitle: {
-    color: '#666',
-    fontSize: 18,
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    textAlign: 'center',
+  tempText: {
+    color: colors.neutral[600],
+    fontSize: 16,
   },
 });

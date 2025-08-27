@@ -1,48 +1,64 @@
 # Code Style and Conventions
 
-## TypeScript Configuration
-- **Strict Mode**: Enabled (`"strict": true`)
-- **Type Safety**: All code must include proper TypeScript types
-- **No implicit any**: Avoid using `any` type
-- **Extends**: Uses Expo's base TypeScript configuration
+## ESLint Configuration
+- **Base Config**: Airbnb + Airbnb TypeScript + React Native
+- **Parser**: @typescript-eslint/parser
+- **Key Rules**:
+  - Strict TypeScript rules enabled
+  - React/React Native optimizations
+  - Import order enforcement
+  - Prettier integration
+  - No console.log (warn level)
+  - Japanese comments encouraged in implementation
 
-## File Organization
-```
-src/
-├── components/     # Reusable UI components
-├── screens/        # Screen components (Timeline, Rove, Post, Account)
-├── navigation/     # Navigation configuration
-├── services/       # External services (Supabase)
-├── store/          # Global state (Zustand)
-├── hooks/          # Custom React hooks
-├── utils/          # Utility functions
-├── types/          # TypeScript type definitions
-└── assets/         # Images, fonts, etc.
-```
+## Prettier Configuration
+- **Semi**: true
+- **Trailing Comma**: all  
+- **Single Quote**: true
+- **Print Width**: 100
+- **Tab Width**: 2 spaces
+- **No tabs**: spaces only
+- **End of Line**: lf
 
-## Naming Conventions
-- **Files**: PascalCase for components, camelCase for utilities
-- **Components**: PascalCase (e.g., `TimelineScreen.tsx`)
-- **Hooks**: camelCase starting with "use" (e.g., `useAuth.ts`)
-- **Types**: PascalCase with descriptive names (e.g., `UserProfile`, `PostData`)
-- **Constants**: UPPER_SNAKE_CASE
+## TypeScript Standards
+- **Strict mode**: enabled
+- **No explicit any**: warn level
+- **Unused vars**: warn with underscore prefix ignore
+- **Function return types**: optional but encouraged
+- **Interface over type**: prefer interfaces
 
-## Code Quality Standards
-- All files must be properly typed
-- Use functional components with hooks
-- Implement proper error handling
-- Follow React Native best practices
-- Use meaningful variable and function names
-- Add JSDoc comments for complex functions
+## File Naming Conventions
+- **Components**: PascalCase (e.g., AuthScreen.tsx)
+- **Hooks**: camelCase with use prefix (e.g., useAuth.ts)
+- **Utils**: camelCase (e.g., validation.ts)
+- **Types**: PascalCase interfaces (e.g., User, AuthState)
 
 ## Import Order
-1. React and React Native imports
-2. Third-party libraries
-3. Internal utilities and services
-4. Component imports
-5. Type imports (using `import type`)
+1. React imports first
+2. External libraries
+3. Internal imports (@/ path)
+4. Relative imports
+5. Alphabetical within groups
+6. Newlines between groups
 
-## Environment Variables
-- Use `.env.example` as template
-- Never commit actual environment values
-- Use `EXPO_PUBLIC_` prefix for client-accessible variables
+## React Native Specific Rules
+- No inline styles (warn)
+- Split platform components
+- No color literals (use design system)
+- Proper prop types with TypeScript
+
+## Component Structure
+```typescript
+// 1. Imports
+import React from 'react';
+// 2. Types/Interfaces  
+interface Props {}
+// 3. Component
+const Component: React.FC<Props> = () => {
+  // 4. Hooks
+  // 5. Event handlers
+  // 6. Render
+};
+// 7. Export
+export default Component;
+```
