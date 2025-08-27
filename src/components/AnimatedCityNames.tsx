@@ -128,6 +128,7 @@ export const AnimatedCityNames: React.FC = () => {
       >
         <Icon name="location-on" size={14} color="#999" style={styles.icon} />
         <Animated.Text style={styles.cityText}>{currentCity}</Animated.Text>
+        <View style={styles.spacer} />
       </Animated.View>
     </View>
   );
@@ -152,5 +153,9 @@ const styles = StyleSheet.create({
   icon: {
     marginRight: 3,
     opacity: 0.5, // Make icon more subtle
+  },
+  spacer: {
+    marginLeft: 3,
+    width: 14, // Same size as the icon
   },
 });

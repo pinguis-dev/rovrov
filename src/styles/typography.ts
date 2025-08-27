@@ -2,8 +2,8 @@ import { TextStyle } from 'react-native';
 
 export const typography = {
   display: {
-    fontSize: 38,
-    lineHeight: 46,
+    fontSize: 44,
+    lineHeight: 52,
     fontWeight: '200',
   } as TextStyle,
   title: {
