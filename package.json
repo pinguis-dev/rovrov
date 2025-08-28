@@ -17,6 +17,7 @@
     "test": "cross-env NODE_ENV=test ts-node tests/media-upload-api.test.ts",
     "test:media": "npm run test",
     "test:posts": "cross-env NODE_ENV=test jest tests/posts-crud-api.test.js --testTimeout=30000",
+    "test:profiles": "cross-env NODE_ENV=test jest tests/profiles-api.test.ts --testTimeout=30000",
     "prepare": "husky install",
     "pre-commit": "lint-staged"
   },
