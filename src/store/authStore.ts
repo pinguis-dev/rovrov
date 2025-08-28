@@ -1,178 +1,215 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
-import { authStorage } from '../services/secureStorage';
 import { supabase } from '../services/supabase';
 import type { User, Session, AuthError } from '../types/auth';
 
 interface AuthStore {
+  // 状態
   user: User | null;
   session: Session | null;
   isLoading: boolean;
+  isInitialized: boolean;
   error: AuthError | null;
   isAuthenticated: boolean;
 
+  // アクション
   signInWithMagicLink: (email: string) => Promise<void>;
   verifyOtp: (token: string, email: string) => Promise<void>;
-  refreshSession: () => Promise<void>;
   signOut: () => Promise<void>;
+  refreshSession: () => Promise<void>;
+  initialize: () => Promise<void>;
+  setUser: (user: User | null) => void;
+  setSession: (session: Session | null) => void;
+  setLoading: (loading: boolean) => void;
   clearError: () => void;
-  checkSession: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthStore>((set, get) => ({
-  user: null,
-  session: null,
-  isLoading: false,
-  error: null,
-  isAuthenticated: false,
+export const useAuthStore = create<AuthStore>()(
+  persist(
+    (set) => ({
+      user: null,
+      session: null,
+      isLoading: false,
+      isInitialized: false,
+      error: null,
+      isAuthenticated: false,
 
-  signInWithMagicLink: async (email: string) => {
-    console.log('AuthStore: Starting magic link for:', email);
-    set({ error: null }); // isLoadingの更新を削除
-    try {
-      console.log('AuthStore: Calling Supabase signInWithOtp');
-      const { error } = await supabase.auth.signInWithOtp({
-        email: email.trim(),
-        options: {
-          emailRedirectTo: 'rovrov://auth/callback',
-        },
-      });
+      signInWithMagicLink: async (email: string) => {
+        set({ isLoading: true, error: null });
+        try {
+          const { error } = await supabase.auth.signInWithOtp({
+            email: email.trim(),
+            options: {
+              emailRedirectTo: 'rovrov://auth/callback',
+            },
+          });
+          if (error) throw error;
+        } catch (error: any) {
+          const authError = mapSupabaseError(error);
+          set({ error: authError });
+          throw authError;
+        } finally {
+          set({ isLoading: false });
+        }
+      },
 
-      console.log('AuthStore: Supabase response error:', error);
-      if (error) throw error;
+      verifyOtp: async (token: string, email: string) => {
+        set({ isLoading: true, error: null });
+        try {
+          const { data, error } = await supabase.auth.verifyOtp({
+            token,
+            email,
+            type: 'email',
+          });
 
-      console.log('AuthStore: Magic link sent successfully');
-      // isLoading: falseの設定を削除
-    } catch (error: any) {
-      console.error('AuthStore: Error caught:', error);
-      const authError = mapSupabaseError(error);
-      set({ error: authError }); // isLoadingの更新を削除
-      throw authError;
-    }
-  },
+          if (error) throw error;
 
-  verifyOtp: async (token: string, email: string) => {
-    set({ isLoading: true, error: null });
-    try {
-      const { data, error } = await supabase.auth.verifyOtp({
-        token,
-        email,
-        type: 'email',
-      });
+          if (data.session) {
+            const userData: User = {
+              id: data.user?.id || '',
+              email: data.user?.email || '',
+              username: data.user?.user_metadata?.username,
+              display_name: data.user?.user_metadata?.display_name,
+              bio: data.user?.user_metadata?.bio,
+              avatar_url: data.user?.user_metadata?.avatar_url,
+              created_at: data.user?.created_at || '',
+              updated_at: data.user?.updated_at || '',
+            };
 
-      if (error) throw error;
+            set({
+              user: userData,
+              session: {
+                access_token: data.session.access_token,
+                refresh_token: data.session.refresh_token || '',
+                expires_in: data.session.expires_in || 3600,
+                expires_at: data.session.expires_at || 0,
+                user: userData,
+              },
+              isAuthenticated: true,
+            });
+          }
+        } catch (error: any) {
+          const authError = mapSupabaseError(error);
+          set({ error: authError });
+          throw authError;
+        } finally {
+          set({ isLoading: false });
+        }
+      },
 
-      if (data.session) {
-        await authStorage.setTokens(data.session.access_token, data.session.refresh_token || '');
+      signOut: async () => {
+        set({ isLoading: true });
+        try {
+          const { error } = await supabase.auth.signOut();
+          if (error) throw error;
+          set({ user: null, session: null, isAuthenticated: false });
+        } catch (error: any) {
+          console.error('Sign out error:', error);
+          throw error;
+        } finally {
+          set({ isLoading: false });
+        }
+      },
 
-        const userData: User = {
-          id: data.user?.id || '',
-          email: data.user?.email || '',
-          username: data.user?.user_metadata?.username,
-          display_name: data.user?.user_metadata?.display_name,
-          bio: data.user?.user_metadata?.bio,
-          avatar_url: data.user?.user_metadata?.avatar_url,
-          created_at: data.user?.created_at || '',
-          updated_at: data.user?.updated_at || '',
-        };
+      refreshSession: async () => {
+        try {
+          const { data, error } = await supabase.auth.refreshSession();
+          if (error) throw error;
+          if (data.session) {
+            const userData: User = {
+              id: data.session.user?.id || '',
+              email: data.session.user?.email || '',
+              username: data.session.user?.user_metadata?.username,
+              display_name: data.session.user?.user_metadata?.display_name,
+              bio: data.session.user?.user_metadata?.bio,
+              avatar_url: data.session.user?.user_metadata?.avatar_url,
+              created_at: data.session.user?.created_at || '',
+              updated_at: data.session.user?.updated_at || '',
+            };
+            set({
+              session: {
+                access_token: data.session.access_token,
+                refresh_token: data.session.refresh_token || '',
+                expires_in: data.session.expires_in || 3600,
+                expires_at: data.session.expires_at || 0,
+                user: userData,
+              },
+              user: userData,
+            });
+          }
+        } catch (error: any) {
+          console.error('Refresh session error:', error);
+          // セッション無効な場合はログアウト処理
+          set({ user: null, session: null, isAuthenticated: false });
+        }
+      },
 
-        await authStorage.setUserData(JSON.stringify(userData));
+      initialize: async () => {
+        try {
+          const {
+            data: { session },
+            error,
+          } = await supabase.auth.getSession();
+          if (error) throw error;
 
+          if (session) {
+            const userData: User = {
+              id: session.user?.id || '',
+              email: session.user?.email || '',
+              username: session.user?.user_metadata?.username,
+              display_name: session.user?.user_metadata?.display_name,
+              bio: session.user?.user_metadata?.bio,
+              avatar_url: session.user?.user_metadata?.avatar_url,
+              created_at: session.user?.created_at || '',
+              updated_at: session.user?.updated_at || '',
+            };
+
+            set({
+              session: {
+                access_token: session.access_token,
+                refresh_token: session.refresh_token || '',
+                expires_in: session.expires_in || 3600,
+                expires_at: session.expires_at || 0,
+                user: userData,
+              },
+              user: userData,
+              isAuthenticated: true,
+              isInitialized: true,
+            });
+          } else {
+            set({ isInitialized: true });
+          }
+        } catch (error) {
+          console.error('Initialize auth error:', error);
+          set({ isInitialized: true });
+        }
+      },
+
+      setUser: (user: User | null) => set({ user, isAuthenticated: !!user }),
+
+      setSession: (session: Session | null) =>
         set({
-          user: userData,
-          session: {
-            access_token: data.session.access_token,
-            refresh_token: data.session.refresh_token || '',
-            expires_in: data.session.expires_in || 3600,
-            expires_at: data.session.expires_at || 0,
-            user: userData,
-          },
-          isAuthenticated: true,
-          isLoading: false,
-        });
-      }
-    } catch (error: any) {
-      const authError = mapSupabaseError(error);
-      set({ isLoading: false, error: authError });
-      throw authError;
-    }
-  },
+          session,
+          user: session?.user || null,
+          isAuthenticated: !!session,
+        }),
 
-  refreshSession: async () => {
-    try {
-      const { data, error } = await supabase.auth.refreshSession();
+      setLoading: (isLoading: boolean) => set({ isLoading }),
 
-      if (error) throw error;
-
-      if (data.session) {
-        await authStorage.setTokens(data.session.access_token, data.session.refresh_token || '');
-      }
-    } catch (error: any) {
-      console.error('Failed to refresh session:', error);
-      await get().signOut();
-    }
-  },
-
-  signOut: async () => {
-    set({ isLoading: true });
-    try {
-      await supabase.auth.signOut();
-      await authStorage.clearAll();
-      set({
-        user: null,
-        session: null,
-        isAuthenticated: false,
-        isLoading: false,
-        error: null,
-      });
-    } catch (error: any) {
-      console.error('Sign out error:', error);
-      set({ isLoading: false });
-    }
-  },
-
-  clearError: () => {
-    set({ error: null });
-  },
-
-  checkSession: async () => {
-    set({ isLoading: true });
-    try {
-      const { data } = await supabase.auth.getSession();
-
-      if (data.session) {
-        const userData: User = {
-          id: data.session.user?.id || '',
-          email: data.session.user?.email || '',
-          username: data.session.user?.user_metadata?.username,
-          display_name: data.session.user?.user_metadata?.display_name,
-          bio: data.session.user?.user_metadata?.bio,
-          avatar_url: data.session.user?.user_metadata?.avatar_url,
-          created_at: data.session.user?.created_at || '',
-          updated_at: data.session.user?.updated_at || '',
-        };
-
-        set({
-          user: userData,
-          session: {
-            access_token: data.session.access_token,
-            refresh_token: data.session.refresh_token || '',
-            expires_in: data.session.expires_in || 3600,
-            expires_at: data.session.expires_at || 0,
-            user: userData,
-          },
-          isAuthenticated: true,
-          isLoading: false,
-        });
-      } else {
-        set({ isLoading: false });
-      }
-    } catch (error) {
-      console.error('Session check error:', error);
-      set({ isLoading: false });
-    }
-  },
-}));
+      clearError: () => set({ error: null }),
+    }),
+    {
+      name: 'auth-storage',
+      storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({
+        user: state.user,
+        session: state.session,
+      }),
+    },
+  ),
+);
 
 function mapSupabaseError(error: any): AuthError {
   const errorMap: Record<string, string> = {

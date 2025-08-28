@@ -4,22 +4,22 @@ import { StatusBar } from 'expo-status-bar';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { useAuthListener } from './src/hooks/useAuthListener';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { useAuthStore } from './src/store/authStore';
 import { colors } from './src/styles/colors';
 import { setupDeepLinkListener } from './src/utils/deepLinkHandler';
 
 export default function App() {
-  const { isAuthenticated, isLoading, checkSession } = useAuthStore();
+  useAuthListener();
+  const { isAuthenticated, isInitialized } = useAuthStore();
 
   useEffect(() => {
-    checkSession();
     const cleanup = setupDeepLinkListener();
     return cleanup;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // checkSession を依存配列から除外
+  }, []);
 
-  if (isLoading) {
+  if (!isInitialized) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.neutral[700]} />
