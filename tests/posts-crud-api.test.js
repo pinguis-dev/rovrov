@@ -340,7 +340,22 @@ describe('BE-008 Posts CRUD API Test Suite', () => {
     });
 
     describe('1.3 Validation Errors', () => {
-      test('TC-010: Missing idempotency key', async () => {
+      test('TC-010: Unauthorized access (missing idempotency key)', async () => {
+        const postData = {
+          caption: 'Test without idempotency key',
+          status: 'published',
+        };
+
+        const response = await makeRequest('POST', POSTS_API_URL, postData, {
+          // No authentication token provided
+        });
+
+        expect(response.status).toBe(401);
+        expect(response.data.code).toBe(401);
+        expect(response.data.message).toBe('Missing authorization header');
+      });
+
+      test('TC-010a: Authenticated user missing idempotency key', async () => {
         const postData = {
           caption: 'Test without idempotency key',
           status: 'published',
@@ -459,7 +474,8 @@ describe('BE-008 Posts CRUD API Test Suite', () => {
         });
 
         expect(response.status).toBe(401);
-        expect(response.data.error.code).toBe('UNAUTHORIZED');
+        expect(response.data.code).toBe(401);
+        expect(response.data.message).toBe('Missing authorization header');
       });
     });
   });
