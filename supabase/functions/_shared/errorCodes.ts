@@ -1,0 +1,56 @@
+export const MEDIA_ERROR_CODES = {
+  // Authentication errors
+  UNAUTHORIZED: 'UNAUTHORIZED',
+  INVALID_TOKEN: 'INVALID_TOKEN',
+
+  // Request validation errors
+  INVALID_REQUEST: 'INVALID_REQUEST',
+  METHOD_NOT_ALLOWED: 'METHOD_NOT_ALLOWED',
+  MISSING_REQUIRED_FIELDS: 'MISSING_REQUIRED_FIELDS',
+
+  // File validation errors
+  FILE_TOO_LARGE: 'FILE_TOO_LARGE',
+  INVALID_FILE_TYPE: 'INVALID_FILE_TYPE',
+  EXTENSION_MISMATCH: 'EXTENSION_MISMATCH',
+  MALFORMED_FILE: 'MALFORMED_FILE',
+
+  // Upload errors
+  UPLOAD_URL_FAILED: 'UPLOAD_URL_FAILED',
+  STREAM_UPLOAD_FAILED: 'STREAM_UPLOAD_FAILED',
+  STORAGE_ERROR: 'STORAGE_ERROR',
+
+  // Processing errors
+  PROCESSING_FAILED: 'PROCESSING_FAILED',
+  IMAGE_PROCESSING_FAILED: 'IMAGE_PROCESSING_FAILED',
+  THUMBNAIL_GENERATION_FAILED: 'THUMBNAIL_GENERATION_FAILED',
+
+  // Database errors
+  DATABASE_ERROR: 'DATABASE_ERROR',
+  RECORD_NOT_FOUND: 'RECORD_NOT_FOUND',
+  RECORD_CREATION_FAILED: 'RECORD_CREATION_FAILED',
+
+  // External service errors
+  CLOUDFLARE_API_ERROR: 'CLOUDFLARE_API_ERROR',
+  WEBHOOK_VERIFICATION_FAILED: 'WEBHOOK_VERIFICATION_FAILED',
+
+  // System errors
+  INTERNAL_ERROR: 'INTERNAL_ERROR',
+  SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
+  TIMEOUT: 'TIMEOUT',
+} as const;
+
+export type MediaErrorCode = (typeof MEDIA_ERROR_CODES)[keyof typeof MEDIA_ERROR_CODES];
+
+export interface MediaError {
+  code: MediaErrorCode;
+  message: string;
+  details?: any;
+}
+
+export function createMediaError(code: MediaErrorCode, message: string, details?: any): MediaError {
+  return {
+    code,
+    message,
+    details,
+  };
+}

@@ -122,5 +122,19 @@ module.exports = {
     '.eslintrc.js',
     'setup-*.ts',
     'setup-*.js',
+    'supabase/functions/**/*',
+  ],
+  overrides: [
+    {
+      files: ['tests/**/*', '**/*.test.ts', '**/*.test.tsx'],
+      rules: {
+        'no-console': 'off',
+        '@typescript-eslint/no-explicit-any': 'off',
+        '@typescript-eslint/no-unsafe-assignment': 'off',
+        '@typescript-eslint/no-unsafe-member-access': 'off',
+        '@typescript-eslint/no-unsafe-call': 'off',
+        '@typescript-eslint/no-floating-promises': 'off',
+      },
+    },
   ],
 };
