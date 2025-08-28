@@ -38,6 +38,9 @@ npm run lint
 
 # Testing
 npm test
+
+# Media API Testing
+npm run test:media
 ```
 
 ## Architecture Overview
@@ -74,6 +77,13 @@ src/
 - ✅ Screen scaffolding (Timeline, Rove, Post, Account)
 - ✅ Supabase integration setup
 - ✅ Auth state management (Zustand)
+- ✅ Media Upload API (BE-007)
+  - ✅ Image upload with signed URLs (10MB limit)
+  - ✅ Video upload with Cloudflare Stream (100MB limit)
+  - ✅ MIME type validation and extension spoofing protection
+  - ✅ EXIF removal and image processing pipeline
+  - ✅ Webhook handling with idempotency and DLQ
+  - ✅ Comprehensive test suite
 - ⏳ Magic link authentication
 - ⏳ Post creation with media
 - ⏳ Map integration
