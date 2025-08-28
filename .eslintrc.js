@@ -122,5 +122,37 @@ module.exports = {
     '.eslintrc.js',
     'setup-*.ts',
     'setup-*.js',
+    'supabase/functions/**/*',
+    'jest.config.js',
+    'jest.setup.js',
+    'tests/**/*',
+    '**/*.test.js',
+    '**/*.test.ts',
+    '**/*.test.tsx',
+  ],
+  overrides: [
+    {
+      files: ['tests/**/*', '**/*.test.js', '**/*.test.ts', '**/*.test.tsx'],
+      env: {
+        jest: true,
+        node: true,
+      },
+      parser: 'espree',
+      parserOptions: {
+        ecmaVersion: 2022,
+        sourceType: 'module',
+      },
+      extends: [
+        'eslint:recommended'
+      ],
+      rules: {
+        'no-console': 'off',
+        'no-undef': 'off',
+        'no-bitwise': 'off',
+        'no-plusplus': 'off',
+        'no-await-in-loop': 'off',
+        'func-names': 'off',
+      },
+    },
   ],
 };
