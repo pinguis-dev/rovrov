@@ -16,6 +16,7 @@
     "validate": "npm run typecheck && npm run lint && npm run format:check",
     "test": "cross-env NODE_ENV=test ts-node tests/media-upload-api.test.ts",
     "test:media": "npm run test",
+    "test:posts": "cross-env NODE_ENV=test jest tests/posts-crud-api.test.js --testTimeout=30000",
     "prepare": "husky install",
     "pre-commit": "lint-staged"
   },
@@ -69,7 +70,9 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-native": "^5.0.0",
     "husky": "^8.0.0",
+    "jest": "^30.1.1",
     "lint-staged": "^16.1.5",
+    "node-fetch": "^2.7.0",
     "prettier": "^3.6.2",
     "ts-node": "^10.9.2",
     "typescript": "~5.8.3"

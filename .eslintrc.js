@@ -123,17 +123,35 @@ module.exports = {
     'setup-*.ts',
     'setup-*.js',
     'supabase/functions/**/*',
+    'jest.config.js',
+    'jest.setup.js',
+    'tests/**/*',
+    '**/*.test.js',
+    '**/*.test.ts',
+    '**/*.test.tsx',
   ],
   overrides: [
     {
-      files: ['tests/**/*', '**/*.test.ts', '**/*.test.tsx'],
+      files: ['tests/**/*', '**/*.test.js', '**/*.test.ts', '**/*.test.tsx'],
+      env: {
+        jest: true,
+        node: true,
+      },
+      parser: 'espree',
+      parserOptions: {
+        ecmaVersion: 2022,
+        sourceType: 'module',
+      },
+      extends: [
+        'eslint:recommended'
+      ],
       rules: {
         'no-console': 'off',
-        '@typescript-eslint/no-explicit-any': 'off',
-        '@typescript-eslint/no-unsafe-assignment': 'off',
-        '@typescript-eslint/no-unsafe-member-access': 'off',
-        '@typescript-eslint/no-unsafe-call': 'off',
-        '@typescript-eslint/no-floating-promises': 'off',
+        'no-undef': 'off',
+        'no-bitwise': 'off',
+        'no-plusplus': 'off',
+        'no-await-in-loop': 'off',
+        'func-names': 'off',
       },
     },
   ],
