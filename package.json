@@ -14,6 +14,8 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "validate": "npm run typecheck && npm run lint && npm run format:check",
+    "test": "cross-env NODE_ENV=test ts-node tests/media-upload-api.test.ts",
+    "test:media": "npm run test",
     "prepare": "husky install",
     "pre-commit": "lint-staged"
   },
