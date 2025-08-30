@@ -441,8 +441,19 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
         if (selectedRegionCode) {
           initialIndex = regions.findIndex((r) => r.code === selectedRegionCode);
         }
-        if (initialIndex < 0 && selectedCountryCode === 'JP') {
-          initialIndex = regions.findIndex((r) => r.code === 'JP-13' || r.name === 'Tokyo');
+        if (initialIndex < 0) {
+          if (selectedCountryCode === 'JP') {
+            initialIndex = regions.findIndex((r) => r.code === 'JP-13' || r.name === 'Tokyo');
+          } else if (selectedCountryCode === 'KR') {
+            initialIndex = regions.findIndex((r) => r.code === 'KR-11' || r.name === 'Seoul');
+          } else if (selectedCountryCode === 'US') {
+            initialIndex = regions.findIndex(
+              (r) =>
+                r.code === 'US-DC' ||
+                r.name === 'District of Columbia' ||
+                r.name === 'Washington, D.C.',
+            );
+          }
         }
 
         return (

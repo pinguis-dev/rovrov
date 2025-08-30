@@ -72,6 +72,7 @@ const KR_REGIONS: Region[] = [
 ];
 
 const US_REGIONS: Region[] = [
+  { code: 'US-DC', name: 'District of Columbia' },
   { code: 'US-AL', name: 'Alabama' },
   { code: 'US-AK', name: 'Alaska' },
   { code: 'US-AZ', name: 'Arizona' },
