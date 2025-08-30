@@ -278,13 +278,13 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
   const getStepTitle = () => {
     switch (currentStep) {
       case ProfileSetupStep.USERNAME:
-        return 'あなたのアカウントID';
+        return 'あなたのアカウントIDは？';
       case ProfileSetupStep.DISPLAY_NAME:
-        return 'あなたの名前';
+        return 'あなたの名前は？';
       case ProfileSetupStep.AVATAR:
-        return 'プロフィール画像は？';
+        return 'プロフィール画像';
       case ProfileSetupStep.LOCATION:
-        return 'あなたに近い場所は？';
+        return 'あなたに近い場所';
       case ProfileSetupStep.BIO:
         return 'bioを書こう';
       default:
@@ -328,15 +328,13 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
             }}
             placeholder="rovrov123"
             autoCapitalize="none"
-            error={errors.username?.message}
+            error={
+              errors.username?.message ||
+              (usernameAvailable === false ? '✗ 既に使用されています' : undefined)
+            }
+            success={usernameAvailable === true && !errors.username ? '✓ 使用可能です' : undefined}
           />
-          {/* 成功表示はエラーがない時のみ */}
-          {usernameAvailable === true && !errors.username && (
-            <Text style={styles.successText}>✓ 使用可能です</Text>
-          )}
-          {usernameAvailable === false && (
-            <Text style={styles.errorText}>✗ 既に使用されています</Text>
-          )}
+          {/* TextInputのメッセージ枠を利用するため追加の枠は不要 */}
         </View>
       )}
     />
@@ -356,7 +354,7 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
           <TextInput
             value={value}
             onChangeText={onChange}
-            placeholder="例: 田中太郎"
+            placeholder="name"
             error={errors.display_name?.message}
           />
         </View>
@@ -463,14 +461,20 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
             </TouchableOpacity>
 
             {country && (
-              <TouchableOpacity style={styles.selectButton} onPress={openRegion}>
+              <TouchableOpacity
+                style={[styles.selectButton, styles.selectButtonTight]}
+                onPress={openRegion}
+              >
                 <Text style={styles.selectText}>{regionLabel}</Text>
               </TouchableOpacity>
             )}
-
-            {errors.location?.message && (
-              <Text style={styles.errorText}>{errors.location.message}</Text>
-            )}
+            <View style={styles.messageSlot}>
+              {errors.location?.message ? (
+                <Text style={styles.errorText}>{errors.location.message}</Text>
+              ) : (
+                <Text style={styles.messagePlaceholder}> </Text>
+              )}
+            </View>
 
             {/* Country Modal */}
             <Modal transparent visible={countryModalVisible} animationType="fade">
@@ -695,8 +699,6 @@ const styles = StyleSheet.create({
   errorText: {
     ...typography.footnote,
     color: colors.semantic.error,
-    marginBottom: 16,
-    marginTop: -16,
     paddingHorizontal: 4,
   },
   iconButton: {
@@ -710,6 +712,16 @@ const styles = StyleSheet.create({
   inputContainer: {
     maxWidth: 300,
     width: '100%',
+  },
+  messagePlaceholder: {
+    ...typography.footnote,
+    opacity: 0,
+  },
+  messageSlot: {
+    marginBottom: 16,
+    marginTop: 8,
+    minHeight: (typography.footnote.lineHeight as number) ?? 20,
+    paddingHorizontal: 4,
   },
   // Modal styles (alphabetically before navigationContainer)
   modalBackdrop: {
@@ -802,6 +814,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingHorizontal: 16,
   },
+  // Use for the last select just before the message
+  selectButtonTight: {
+    marginBottom: 0,
+  },
   selectText: {
     ...typography.body,
     color: colors.neutral[700],
@@ -822,12 +838,5 @@ const styles = StyleSheet.create({
     fontWeight: '200',
     lineHeight: 38,
     textAlign: 'center',
-  },
-  successText: {
-    ...typography.footnote,
-    color: colors.semantic.success,
-    marginBottom: 16,
-    marginTop: -16,
-    paddingHorizontal: 4,
   },
 });

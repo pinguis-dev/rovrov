@@ -14,9 +14,10 @@ import { typography } from '../../styles/typography';
 interface TextInputProps extends RNTextInputProps {
   label?: string;
   error?: string;
+  success?: string;
 }
 
-export const TextInput: React.FC<TextInputProps> = ({ label, error, style, ...props }) => {
+export const TextInput: React.FC<TextInputProps> = ({ label, error, success, style, ...props }) => {
   return (
     <View style={styles.container}>
       {label && <Text style={styles.label}>{label}</Text>}
@@ -26,7 +27,14 @@ export const TextInput: React.FC<TextInputProps> = ({ label, error, style, ...pr
         // eslint-disable-next-line react/jsx-props-no-spreading
         {...props}
       />
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      <Text
+        style={[
+          styles.messageRow,
+          error ? styles.messageError : success ? styles.messageSuccess : styles.messageHidden,
+        ]}
+      >
+        {error || success || ' '}
+      </Text>
     </View>
   );
 };
@@ -34,12 +42,6 @@ export const TextInput: React.FC<TextInputProps> = ({ label, error, style, ...pr
 const styles = StyleSheet.create({
   container: {
     marginBottom: 24,
-  },
-  errorText: {
-    ...typography.footnote,
-    color: colors.semantic.error,
-    marginTop: 8,
-    paddingHorizontal: 4,
   },
   input: {
     backgroundColor: colors.neutral[200],
@@ -63,5 +65,20 @@ const styles = StyleSheet.create({
     color: colors.neutral[600],
     fontWeight: '400',
     marginBottom: 8,
+  },
+  messageError: {
+    color: colors.semantic.error,
+  },
+  messageHidden: {
+    opacity: 0,
+  },
+  messageRow: {
+    ...typography.footnote,
+    marginTop: 8,
+    minHeight: typography.footnote.lineHeight as number,
+    paddingHorizontal: 4,
+  },
+  messageSuccess: {
+    color: colors.semantic.success,
   },
 });
