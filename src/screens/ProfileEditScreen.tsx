@@ -57,29 +57,7 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
   const [selectedCountryCode, setSelectedCountryCode] = useState<string | null>(null);
   const [selectedRegionCode, setSelectedRegionCode] = useState<string | null>(null);
   const regionListRef = useRef<FlatList<Region>>(null);
-
-  // When region modal opens, center Tokyo (JP-13) or current selection
-  useEffect(() => {
-    if (!regionModalVisible) return;
-    const country = getCountry(selectedCountryCode);
-    const regions = country?.regions ?? [];
-    let index = -1;
-    if (selectedRegionCode) {
-      index = regions.findIndex((r) => r.code === selectedRegionCode);
-    }
-    if (index < 0 && selectedCountryCode === 'JP') {
-      index = regions.findIndex((r) => r.code === 'JP-13' || r.name === 'Tokyo');
-    }
-    if (index >= 0) {
-      requestAnimationFrame(() => {
-        try {
-          regionListRef.current?.scrollToIndex({ index, animated: false, viewPosition: 0.5 });
-        } catch {
-          // ignore
-        }
-      });
-    }
-  }, [regionModalVisible, selectedCountryCode, selectedRegionCode]);
+  const REGION_ROW_HEIGHT = 48;
 
   const {
     control,
@@ -457,6 +435,16 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
 
         // Scroll handled by outer useEffect when modal becomes visible
 
+        // 初期スクロール位置（選択済み > Tokyo）
+        const regions = country?.regions ?? [];
+        let initialIndex = -1;
+        if (selectedRegionCode) {
+          initialIndex = regions.findIndex((r) => r.code === selectedRegionCode);
+        }
+        if (initialIndex < 0 && selectedCountryCode === 'JP') {
+          initialIndex = regions.findIndex((r) => r.code === 'JP-13' || r.name === 'Tokyo');
+        }
+
         return (
           <View style={styles.inputContainer}>
             <TouchableOpacity style={styles.selectButton} onPress={openCountry}>
@@ -507,7 +495,13 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
                   <Text style={styles.modalTitle}>地域を選択</Text>
                   <FlatList
                     ref={regionListRef}
-                    data={country?.regions ?? []}
+                    data={regions}
+                    initialScrollIndex={initialIndex >= 0 ? initialIndex : undefined}
+                    getItemLayout={(_data, index) => ({
+                      length: REGION_ROW_HEIGHT,
+                      offset: REGION_ROW_HEIGHT * index,
+                      index,
+                    })}
                     keyExtractor={(item) => item.code}
                     renderItem={({ item }) => (
                       <TouchableOpacity
@@ -518,6 +512,7 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
                       </TouchableOpacity>
                     )}
                     onScrollToIndexFailed={(info) => {
+                      // レイアウト計測前のフォールバック
                       setTimeout(() => {
                         try {
                           regionListRef.current?.scrollToIndex({
@@ -726,8 +721,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   modalItem: {
+    alignItems: 'flex-start',
+    height: 48,
+    justifyContent: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 14,
   },
   modalItemText: {
     ...typography.body,
