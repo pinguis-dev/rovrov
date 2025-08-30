@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 
 import { colors } from '../../styles/colors';
+import { spacing } from '../../styles/spacing';
 import { typography } from '../../styles/typography';
 
 interface TextInputProps extends RNTextInputProps {
@@ -74,11 +75,11 @@ const styles = StyleSheet.create({
   },
   messageRow: {
     ...typography.footnote,
-    marginTop: 8,
+    marginTop: spacing.xs,
     minHeight: typography.footnote.lineHeight as number,
     paddingHorizontal: 4,
   },
   messageSuccess: {
-    color: colors.semantic.success,
+    color: colors.semantic.successMuted,
   },
 });
