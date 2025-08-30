@@ -29,11 +29,12 @@ import { typography } from '../styles/typography';
 import { ProfileFormData } from '../types';
 
 enum ProfileSetupStep {
-  USERNAME = 0,
-  DISPLAY_NAME = 1,
-  AVATAR = 2,
-  LOCATION = 3,
-  BIO = 4,
+  INTRO = 0,
+  USERNAME = 1,
+  DISPLAY_NAME = 2,
+  AVATAR = 3,
+  LOCATION = 4,
+  BIO = 5,
 }
 
 interface ProfileEditScreenProps {
@@ -46,7 +47,7 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
   // const { user } = useAuthStore();
   // Mock user for testing
   const user = { id: 'mock-user-id' };
-  const [currentStep, setCurrentStep] = useState(ProfileSetupStep.USERNAME);
+  const [currentStep, setCurrentStep] = useState(ProfileSetupStep.INTRO);
   const [isLoading, setIsLoading] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
@@ -137,6 +138,22 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
     });
   };
 
+  const goFromIntro = () => {
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 180,
+      useNativeDriver: true,
+    }).start(() => {
+      setCurrentStep(ProfileSetupStep.USERNAME);
+      slideAnim.setValue(0);
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 220,
+        useNativeDriver: true,
+      }).start();
+    });
+  };
+
   const nextStep = async () => {
     const isValid = await validateCurrentStep();
     if (isValid && currentStep < ProfileSetupStep.BIO) {
@@ -152,6 +169,8 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
 
   const validateCurrentStep = async (): Promise<boolean> => {
     switch (currentStep) {
+      case ProfileSetupStep.INTRO:
+        return true;
       case ProfileSetupStep.USERNAME:
         return trigger('username');
       case ProfileSetupStep.DISPLAY_NAME:
@@ -320,6 +339,8 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
 
   const getStepTitle = () => {
     switch (currentStep) {
+      case ProfileSetupStep.INTRO:
+        return 'アカウントを作成しましょう';
       case ProfileSetupStep.USERNAME:
         return 'あなたのアカウントIDは？';
       case ProfileSetupStep.DISPLAY_NAME:
@@ -337,6 +358,8 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
 
   const renderStepContent = () => {
     switch (currentStep) {
+      case ProfileSetupStep.INTRO:
+        return renderIntroStep();
       case ProfileSetupStep.USERNAME:
         return renderUsernameStep();
       case ProfileSetupStep.DISPLAY_NAME:
@@ -351,6 +374,14 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
         return null;
     }
   };
+
+  const renderIntroStep = () => (
+    <TouchableOpacity activeOpacity={0.9} onPress={goFromIntro} style={styles.introContainer}>
+      <Text style={styles.introTitle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+        アカウントを作成しましょう
+      </Text>
+    </TouchableOpacity>
+  );
 
   const renderUsernameStep = () => (
     <Controller
@@ -648,15 +679,17 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          {/* ステップヘッダー */}
-          <View
-            style={[
-              styles.stepHeader,
-              currentStep === ProfileSetupStep.AVATAR ? styles.stepHeaderTight : null,
-            ]}
-          >
-            <Text style={styles.stepTitle}>{getStepTitle()}</Text>
-          </View>
+          {/* ステップヘッダー（INTROでは非表示） */}
+          {currentStep !== ProfileSetupStep.INTRO && (
+            <View
+              style={[
+                styles.stepHeader,
+                currentStep === ProfileSetupStep.AVATAR ? styles.stepHeaderTight : null,
+              ]}
+            >
+              <Text style={styles.stepTitle}>{getStepTitle()}</Text>
+            </View>
+          )}
 
           {/* ステップコンテンツ */}
           <Animated.View
@@ -671,30 +704,34 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
             {renderStepContent()}
           </Animated.View>
 
-          {/* ナビゲーションボタン */}
-          <View style={styles.navigationContainer}>
-            {currentStep > ProfileSetupStep.USERNAME && (
-              <TouchableOpacity onPress={prevStep} style={styles.iconButton}>
-                <Text style={styles.backButtonIcon}>‹</Text>
+          {/* ナビゲーションボタン（INTROでは非表示） */}
+          {currentStep !== ProfileSetupStep.INTRO && (
+            <View style={styles.navigationContainer}>
+              {currentStep > ProfileSetupStep.USERNAME && (
+                <TouchableOpacity onPress={prevStep} style={styles.iconButton}>
+                  <Text style={styles.backButtonIcon}>‹</Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                onPress={() => {
+                  handleStepAction().catch(() => {
+                    // Handle error silently
+                  });
+                }}
+                style={[styles.iconButton, (isLoading || !canProceed) && styles.iconButtonDisabled]}
+                disabled={isLoading || !canProceed}
+              >
+                <Text style={styles.nextButtonIcon}>{isLoading ? '...' : '›'}</Text>
               </TouchableOpacity>
-            )}
-            <TouchableOpacity
-              onPress={() => {
-                handleStepAction().catch(() => {
-                  // Handle error silently
-                });
-              }}
-              style={[styles.iconButton, (isLoading || !canProceed) && styles.iconButtonDisabled]}
-              disabled={isLoading || !canProceed}
-            >
-              <Text style={styles.nextButtonIcon}>{isLoading ? '...' : '›'}</Text>
-            </TouchableOpacity>
-          </View>
+            </View>
+          )}
 
-          {/* 進捗表示 */}
-          <View style={styles.progressContainer}>
-            <Text style={styles.progressText}>{currentStep + 1} / 5</Text>
-          </View>
+          {/* 進捗表示（INTROでは非表示） */}
+          {currentStep !== ProfileSetupStep.INTRO && (
+            <View style={styles.progressContainer}>
+              <Text style={styles.progressText}>{currentStep} / 5</Text>
+            </View>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -783,6 +820,20 @@ const styles = StyleSheet.create({
   inputContainer: {
     maxWidth: 300,
     width: '100%',
+  },
+  introContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 300,
+    paddingVertical: 40,
+    width: '100%',
+  },
+  introTitle: {
+    color: colors.neutral[900],
+    fontSize: 30,
+    fontWeight: '200',
+    lineHeight: 38,
+    textAlign: 'center',
   },
   messagePlaceholder: {
     ...typography.footnote,
