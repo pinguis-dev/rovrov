@@ -291,7 +291,7 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
         shouldDirty: true,
       });
 
-      Alert.alert('成功', '画像をアップロードしました');
+      // Success popup removed per UX request; keep silent on success
     } catch (error) {
       console.error('Image upload error:', error);
       Alert.alert('エラー', '画像のアップロードに失敗しました');
