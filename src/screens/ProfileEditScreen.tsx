@@ -152,7 +152,7 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
       case ProfileSetupStep.AVATAR:
         return true; // アバターは任意
       case ProfileSetupStep.LOCATION:
-        return true; // 場所は任意
+        return trigger('location');
       case ProfileSetupStep.BIO:
         return trigger('bio');
       default:
@@ -394,6 +394,7 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
       key="location-controller"
       control={control}
       name="location"
+      rules={{ required: '場所を選択してください' }}
       render={({ field: { onChange, value: _value } }) => {
         const country = getCountry(selectedCountryCode);
         const region = getRegion(selectedCountryCode, selectedRegionCode);
@@ -427,15 +428,15 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
               <Text style={styles.selectText}>{countryLabel}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.selectButton, !country && styles.selectButtonDisabled]}
-              onPress={openRegion}
-              disabled={!country}
-            >
-              <Text style={[styles.selectText, !country && styles.selectTextDisabled]}>
-                {regionLabel}
-              </Text>
-            </TouchableOpacity>
+            {country && (
+              <TouchableOpacity style={styles.selectButton} onPress={openRegion}>
+                <Text style={styles.selectText}>{regionLabel}</Text>
+              </TouchableOpacity>
+            )}
+
+            {errors.location?.message && (
+              <Text style={styles.errorText}>{errors.location.message}</Text>
+            )}
 
             {/* Country Modal */}
             <Modal transparent visible={countryModalVisible} animationType="fade">
@@ -744,16 +745,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingHorizontal: 16,
   },
-  selectButtonDisabled: {
-    opacity: 0.6,
-  },
   selectText: {
     ...typography.body,
     color: colors.neutral[700],
     fontWeight: '300',
-  },
-  selectTextDisabled: {
-    color: colors.neutral[500],
   },
   stepContent: {
     alignItems: 'center',
