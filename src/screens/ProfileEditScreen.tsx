@@ -14,10 +14,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   Animated,
+  Modal,
+  FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { TextInput, LoadingSpinner } from '../components/ui';
+import { COUNTRIES, getCountry, getRegion, Country, Region } from '../data/geo';
 import { useDebounce } from '../hooks/useDebounce';
 import { colors } from '../styles/colors';
 import { typography } from '../styles/typography';
@@ -47,6 +50,12 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
+
+  // Location (Country -> Region) selection states
+  const [countryModalVisible, setCountryModalVisible] = useState(false);
+  const [regionModalVisible, setRegionModalVisible] = useState(false);
+  const [selectedCountryCode, setSelectedCountryCode] = useState<string | null>(null);
+  const [selectedRegionCode, setSelectedRegionCode] = useState<string | null>(null);
 
   const {
     control,
@@ -385,11 +394,105 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
       key="location-controller"
       control={control}
       name="location"
-      render={({ field: { onChange, value } }) => (
-        <View style={styles.inputContainer}>
-          <TextInput value={value} onChangeText={onChange} placeholder="例: 東京都渋谷区" />
-        </View>
-      )}
+      render={({ field: { onChange, value: _value } }) => {
+        const country = getCountry(selectedCountryCode);
+        const region = getRegion(selectedCountryCode, selectedRegionCode);
+
+        const countryLabel = country ? country.name : '国を選択';
+        let regionLabel = '';
+        if (region) regionLabel = region.name;
+        else if (country) regionLabel = '地域を選択';
+        else regionLabel = '先に国を選択';
+
+        const openCountry = () => setCountryModalVisible(true);
+        const openRegion = () => country && setRegionModalVisible(true);
+
+        const handleSelectCountry = (c: Country) => {
+          setSelectedCountryCode(c.code);
+          setSelectedRegionCode(null);
+          onChange('');
+          setCountryModalVisible(false);
+        };
+
+        const handleSelectRegion = (r: Region) => {
+          setSelectedRegionCode(r.code);
+          const label = `${getCountry(selectedCountryCode)?.name ?? ''} / ${r.name}`.trim();
+          onChange(label);
+          setRegionModalVisible(false);
+        };
+
+        return (
+          <View style={styles.inputContainer}>
+            <TouchableOpacity style={styles.selectButton} onPress={openCountry}>
+              <Text style={styles.selectText}>{countryLabel}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.selectButton, !country && styles.selectButtonDisabled]}
+              onPress={openRegion}
+              disabled={!country}
+            >
+              <Text style={[styles.selectText, !country && styles.selectTextDisabled]}>
+                {regionLabel}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Country Modal */}
+            <Modal transparent visible={countryModalVisible} animationType="fade">
+              <View style={styles.modalBackdrop}>
+                <View style={styles.modalSheet}>
+                  <Text style={styles.modalTitle}>国を選択</Text>
+                  <FlatList
+                    data={COUNTRIES}
+                    keyExtractor={(item) => item.code}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        onPress={() => handleSelectCountry(item)}
+                        style={styles.modalItem}
+                      >
+                        <Text style={styles.modalItemText}>{item.name}</Text>
+                      </TouchableOpacity>
+                    )}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setCountryModalVisible(false)}
+                    style={styles.modalClose}
+                  >
+                    <Text style={styles.modalCloseText}>閉じる</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Modal>
+
+            {/* Region Modal */}
+            <Modal transparent visible={regionModalVisible} animationType="fade">
+              <View style={styles.modalBackdrop}>
+                <View style={styles.modalSheet}>
+                  <Text style={styles.modalTitle}>地域を選択</Text>
+                  <FlatList
+                    data={country?.regions ?? []}
+                    keyExtractor={(item) => item.code}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        onPress={() => handleSelectRegion(item)}
+                        style={styles.modalItem}
+                      >
+                        <Text style={styles.modalItemText}>{item.name}</Text>
+                      </TouchableOpacity>
+                    )}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setRegionModalVisible(false)}
+                    style={styles.modalClose}
+                  >
+                    <Text style={styles.modalCloseText}>閉じる</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Modal>
+          </View>
+        );
+      }}
     />
   );
 
@@ -552,6 +655,48 @@ const styles = StyleSheet.create({
     maxWidth: 300,
     width: '100%',
   },
+  // Modal styles (alphabetically before navigationContainer)
+  modalBackdrop: {
+    alignItems: 'center',
+    backgroundColor: `${colors.neutral[900]}55`,
+    flex: 1,
+    justifyContent: 'center',
+    padding: 24,
+  },
+  modalClose: {
+    borderTopColor: colors.neutral[200],
+    borderTopWidth: StyleSheet.hairlineWidth,
+    marginTop: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  modalCloseText: {
+    ...typography.body,
+    color: colors.neutral[700],
+    textAlign: 'center',
+  },
+  modalItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  modalItemText: {
+    ...typography.body,
+    color: colors.neutral[900],
+  },
+  modalSheet: {
+    backgroundColor: colors.neutral[0],
+    borderRadius: 12,
+    maxHeight: '70%',
+    paddingVertical: 12,
+    width: '100%',
+  },
+  modalTitle: {
+    ...typography.body,
+    color: colors.neutral[900],
+    fontWeight: '400',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
   navigationContainer: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -590,6 +735,25 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  selectButton: {
+    backgroundColor: colors.neutral[200],
+    borderRadius: 12,
+    height: 56,
+    justifyContent: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 16,
+  },
+  selectButtonDisabled: {
+    opacity: 0.6,
+  },
+  selectText: {
+    ...typography.body,
+    color: colors.neutral[700],
+    fontWeight: '300',
+  },
+  selectTextDisabled: {
+    color: colors.neutral[500],
   },
   stepContent: {
     alignItems: 'center',
