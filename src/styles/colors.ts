@@ -13,6 +13,8 @@ export const colors = {
   semantic: {
     error: '#DC2626',
     success: '#059669',
+    successMuted: '#059669B3',
+    warning: '#D97706',
     link: '#1D70B8',
   },
 } as const;
