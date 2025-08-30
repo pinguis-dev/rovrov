@@ -405,13 +405,21 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
         else if (country) regionLabel = '地域を選択';
         else regionLabel = '先に国を選択';
 
-        const openCountry = () => setCountryModalVisible(true);
-        const openRegion = () => country && setRegionModalVisible(true);
+        const openCountry = () => {
+          clearErrors('location');
+          setCountryModalVisible(true);
+        };
+        const openRegion = () => {
+          if (!country) return;
+          clearErrors('location');
+          setRegionModalVisible(true);
+        };
 
         const handleSelectCountry = (c: Country) => {
           setSelectedCountryCode(c.code);
           setSelectedRegionCode(null);
           onChange('');
+          clearErrors('location');
           setCountryModalVisible(false);
         };
 
@@ -419,6 +427,7 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
           setSelectedRegionCode(r.code);
           const label = `${getCountry(selectedCountryCode)?.name ?? ''} / ${r.name}`.trim();
           onChange(label);
+          clearErrors('location');
           setRegionModalVisible(false);
         };
 
