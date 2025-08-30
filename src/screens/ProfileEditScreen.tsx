@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
@@ -24,6 +24,7 @@ import { TextInput, LoadingSpinner } from '../components/ui';
 import { COUNTRIES, getCountry, getRegion, Country, Region } from '../data/geo';
 import { useDebounce } from '../hooks/useDebounce';
 import { colors } from '../styles/colors';
+import { spacing } from '../styles/spacing';
 import { typography } from '../styles/typography';
 import { ProfileFormData } from '../types';
 
@@ -85,6 +86,9 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
 
   const watchedUsername = watch('username');
   const watchedAvatarUrl = watch('avatar_url');
+  const watchedDisplayName = watch('display_name');
+  const watchedBio = watch('bio');
+  const watchedLocation = watch('location');
   const debouncedUsername = useDebounce(watchedUsername, 500);
   // 可用性チェックの競合回避用ID
   const availabilityCheckId = useRef(0);
@@ -162,6 +166,44 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
         return true;
     }
   };
+
+  // Next button enable/disable (cheap, synchronous checks)
+  const canProceed = useMemo(() => {
+    switch (currentStep) {
+      case ProfileSetupStep.USERNAME: {
+        const v = watchedUsername || '';
+        if (v.length < 3 || v.length > 30) return false;
+        if (!/^[a-zA-Z0-9_-]+$/.test(v)) return false;
+        if (usernameAvailable === false) return false;
+        return true;
+      }
+      case ProfileSetupStep.DISPLAY_NAME: {
+        const v = watchedDisplayName || '';
+        if (!v.trim()) return false;
+        if (v.length > 50) return false;
+        return true;
+      }
+      case ProfileSetupStep.AVATAR:
+        return true; // optional
+      case ProfileSetupStep.LOCATION:
+        return Boolean(watchedLocation && selectedCountryCode && selectedRegionCode);
+      case ProfileSetupStep.BIO: {
+        const v = watchedBio || '';
+        return v.length <= 300;
+      }
+      default:
+        return true;
+    }
+  }, [
+    currentStep,
+    watchedUsername,
+    usernameAvailable,
+    watchedDisplayName,
+    watchedLocation,
+    selectedCountryCode,
+    selectedRegionCode,
+    watchedBio,
+  ]);
 
   const checkUsernameAvailability = (username: string) => {
     try {
@@ -577,6 +619,19 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
             error={errors.bio?.message}
             style={styles.bioInput}
           />
+          <View style={styles.counterRow}>
+            <Text
+              style={
+                (value?.length || 0) > 300
+                  ? styles.counterDanger
+                  : (value?.length || 0) >= 240
+                    ? styles.counterWarning
+                    : styles.counterText
+              }
+            >
+              {value?.length || 0} / 300
+            </Text>
+          </View>
         </View>
       )}
     />
@@ -629,8 +684,8 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
                   // Handle error silently
                 });
               }}
-              style={styles.iconButton}
-              disabled={isLoading}
+              style={[styles.iconButton, (isLoading || !canProceed) && styles.iconButtonDisabled]}
+              disabled={isLoading || !canProceed}
             >
               <Text style={styles.nextButtonIcon}>{isLoading ? '...' : '›'}</Text>
             </TouchableOpacity>
@@ -682,7 +737,7 @@ const styles = StyleSheet.create({
     top: 0,
   },
   backButtonIcon: {
-    color: colors.neutral[600],
+    color: colors.neutral[900],
     fontSize: 36,
     fontWeight: '200',
     textAlign: 'center',
@@ -693,6 +748,21 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+  },
+  counterDanger: {
+    color: colors.semantic.error,
+  },
+  counterRow: {
+    alignItems: 'flex-end',
+    marginTop: spacing.xs,
+    width: '100%',
+  },
+  counterText: {
+    ...typography.footnote,
+    color: colors.neutral[600],
+  },
+  counterWarning: {
+    color: colors.semantic.warning,
   },
   errorText: {
     ...typography.footnote,
@@ -707,6 +777,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
   },
+  iconButtonDisabled: {
+    opacity: 0.35,
+  },
   inputContainer: {
     maxWidth: 300,
     width: '100%',
@@ -716,8 +789,8 @@ const styles = StyleSheet.create({
     opacity: 0,
   },
   messageSlot: {
-    marginBottom: 16,
-    marginTop: 8,
+    marginBottom: spacing.sm,
+    marginTop: spacing.xs,
     minHeight: (typography.footnote.lineHeight as number) ?? 20,
     paddingHorizontal: 4,
   },
@@ -809,7 +882,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     height: 56,
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.sm,
     paddingHorizontal: 16,
   },
   // Use for the last select just before the message
