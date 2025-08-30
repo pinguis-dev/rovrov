@@ -54,8 +54,12 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
     watch,
     setValue,
     trigger,
+    clearErrors,
     formState: { errors },
   } = useForm<ProfileFormData>({
+    // 明示的に設定（エラー後はonChangeで再検証）
+    mode: 'onSubmit',
+    reValidateMode: 'onChange',
     defaultValues: {
       username: '',
       display_name: '',
@@ -70,6 +74,8 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
   const watchedUsername = watch('username');
   const watchedAvatarUrl = watch('avatar_url');
   const debouncedUsername = useDebounce(watchedUsername, 500);
+  // 可用性チェックの競合回避用ID
+  const availabilityCheckId = useRef(0);
 
   // Username一意性チェック
   useEffect(() => {
@@ -147,10 +153,14 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
 
   const checkUsernameAvailability = (username: string) => {
     try {
+      const id = availabilityCheckId.current + 1;
+      availabilityCheckId.current = id;
       // const isAvailable = await profileApi.checkUsernameAvailability(username);
       // Mock username availability check
       const isAvailable = username !== 'admin' && username !== 'test';
-      setUsernameAvailable(isAvailable);
+      if (availabilityCheckId.current === id) {
+        setUsernameAvailable(isAvailable);
+      }
     } catch (error) {
       console.error('Username check error:', error);
       setUsernameAvailable(null);
@@ -290,6 +300,7 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
 
   const renderUsernameStep = () => (
     <Controller
+      key="username-controller"
       control={control}
       name="username"
       rules={{ validate: validateUsername }}
@@ -297,12 +308,21 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
         <View style={styles.inputContainer}>
           <TextInput
             value={value}
-            onChangeText={onChange}
+            onChangeText={(text) => {
+              // RHFの値更新 + 入力開始時にエラーを即時クリア
+              onChange(text);
+              clearErrors('username');
+              // 入力のたびに可用性表示はリセット（最新入力のみ表示）
+              setUsernameAvailable(null);
+            }}
             placeholder="rovrov123"
             autoCapitalize="none"
             error={errors.username?.message}
           />
-          {usernameAvailable === true && <Text style={styles.successText}>✓ 使用可能です</Text>}
+          {/* 成功表示はエラーがない時のみ */}
+          {usernameAvailable === true && !errors.username && (
+            <Text style={styles.successText}>✓ 使用可能です</Text>
+          )}
           {usernameAvailable === false && (
             <Text style={styles.errorText}>✗ 既に使用されています</Text>
           )}
@@ -313,6 +333,7 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
 
   const renderDisplayNameStep = () => (
     <Controller
+      key="display-name-controller"
       control={control}
       name="display_name"
       rules={{
@@ -333,7 +354,7 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
   );
 
   const renderAvatarStep = () => (
-    <View style={styles.avatarStepContainer}>
+    <View key="avatar-step-root" style={styles.avatarStepContainer}>
       <TouchableOpacity
         style={styles.avatarContainer}
         onPress={() => {
@@ -361,6 +382,7 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
 
   const renderLocationStep = () => (
     <Controller
+      key="location-controller"
       control={control}
       name="location"
       render={({ field: { onChange, value } }) => (
@@ -373,21 +395,24 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
 
   const renderBioStep = () => (
     <Controller
+      key="bio-controller"
       control={control}
       name="bio"
       rules={{
         maxLength: { value: 300, message: '300文字以内で入力してください' },
       }}
       render={({ field: { onChange, value } }) => (
-        <TextInput
-          value={value}
-          onChangeText={onChange}
-          placeholder="あなたの趣味や興味について教えてください..."
-          multiline
-          numberOfLines={4}
-          error={errors.bio?.message}
-          style={styles.bioInput}
-        />
+        <View style={styles.inputContainer}>
+          <TextInput
+            value={value}
+            onChangeText={onChange}
+            placeholder="あなたの趣味や興味について教えてください..."
+            multiline
+            numberOfLines={4}
+            error={errors.bio?.message}
+            style={styles.bioInput}
+          />
+        </View>
       )}
     />
   );
