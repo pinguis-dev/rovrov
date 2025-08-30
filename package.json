@@ -19,7 +19,9 @@
     "test:posts": "cross-env NODE_ENV=test jest tests/posts-crud-api.test.js --testTimeout=30000",
     "test:profiles": "cross-env NODE_ENV=test jest tests/profiles-api.test.ts --testTimeout=30000",
     "prepare": "husky install",
-    "pre-commit": "lint-staged"
+    "pre-commit": "lint-staged",
+    "mcp:list": "node scripts/mcp-cli.js list-tools",
+    "mcp:call": "node scripts/mcp-cli.js call"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
@@ -31,6 +33,7 @@
     ]
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.17.4",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@supabase/supabase-js": "^2.56.0",
     "@types/react-native-vector-icons": "^6.4.18",

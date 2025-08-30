@@ -16,9 +16,17 @@ interface TextInputProps extends RNTextInputProps {
   label?: string;
   error?: string;
   success?: string;
+  info?: string;
 }
 
-export const TextInput: React.FC<TextInputProps> = ({ label, error, success, style, ...props }) => {
+export const TextInput: React.FC<TextInputProps> = ({
+  label,
+  error,
+  success,
+  info,
+  style,
+  ...props
+}) => {
   return (
     <View style={styles.container}>
       {label && <Text style={styles.label}>{label}</Text>}
@@ -31,10 +39,16 @@ export const TextInput: React.FC<TextInputProps> = ({ label, error, success, sty
       <Text
         style={[
           styles.messageRow,
-          error ? styles.messageError : success ? styles.messageSuccess : styles.messageHidden,
+          error
+            ? styles.messageError
+            : success
+              ? styles.messageSuccess
+              : info
+                ? styles.messageInfo
+                : styles.messageHidden,
         ]}
       >
-        {error || success || ' '}
+        {error || success || info || ' '}
       </Text>
     </View>
   );
@@ -72,6 +86,9 @@ const styles = StyleSheet.create({
   },
   messageHidden: {
     opacity: 0,
+  },
+  messageInfo: {
+    color: colors.neutral[600],
   },
   messageRow: {
     ...typography.footnote,

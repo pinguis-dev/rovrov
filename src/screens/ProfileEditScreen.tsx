@@ -23,6 +23,7 @@ import { defaultAvatar } from '../assets';
 import { TextInput, LoadingSpinner } from '../components/ui';
 import { COUNTRIES, getCountry, getRegion, Country, Region } from '../data/geo';
 import { useDebounce } from '../hooks/useDebounce';
+import { profileApi } from '../services/profileApi';
 import { colors } from '../styles/colors';
 import { spacing } from '../styles/spacing';
 import { typography } from '../styles/typography';
@@ -51,6 +52,8 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
   const [isLoading, setIsLoading] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [usernameChecking, setUsernameChecking] = useState(false);
+  const [usernameCheckError, setUsernameCheckError] = useState(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
 
@@ -97,9 +100,13 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
   // Username一意性チェック
   useEffect(() => {
     if (debouncedUsername && debouncedUsername.length >= 3) {
-      checkUsernameAvailability(debouncedUsername);
+      setUsernameCheckError(false);
+      setUsernameChecking(true);
+      void checkUsernameAvailability(debouncedUsername);
     } else {
       setUsernameAvailable(null);
+      setUsernameCheckError(false);
+      setUsernameChecking(false);
     }
   }, [debouncedUsername]);
 
@@ -193,8 +200,7 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
         const v = watchedUsername || '';
         if (v.length < 3 || v.length > 30) return false;
         if (!/^[a-zA-Z0-9_-]+$/.test(v)) return false;
-        if (usernameAvailable === false) return false;
-        return true;
+        return usernameAvailable === true; // ネットワークエラー/未確認(null)も進めない
       }
       case ProfileSetupStep.DISPLAY_NAME: {
         const v = watchedDisplayName || '';
@@ -224,19 +230,20 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
     watchedBio,
   ]);
 
-  const checkUsernameAvailability = (username: string) => {
+  const checkUsernameAvailability = async (username: string) => {
     try {
       const id = availabilityCheckId.current + 1;
       availabilityCheckId.current = id;
-      // const isAvailable = await profileApi.checkUsernameAvailability(username);
-      // Mock username availability check
-      const isAvailable = username !== 'admin' && username !== 'test';
+      const isAvailable = await profileApi.checkUsernameAvailability(username);
       if (availabilityCheckId.current === id) {
         setUsernameAvailable(isAvailable);
       }
     } catch (error) {
       console.error('Username check error:', error);
       setUsernameAvailable(null);
+      setUsernameCheckError(true);
+    } finally {
+      setUsernameChecking(false);
     }
   };
 
@@ -399,6 +406,8 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
               clearErrors('username');
               // 入力のたびに可用性表示はリセット（最新入力のみ表示）
               setUsernameAvailable(null);
+              setUsernameCheckError(false);
+              setUsernameChecking(false);
             }}
             placeholder="rovrov123"
             autoCapitalize="none"
@@ -407,6 +416,13 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
               (usernameAvailable === false ? '✗ 既に使用されています' : undefined)
             }
             success={usernameAvailable === true && !errors.username ? '✓ 使用可能です' : undefined}
+            info={
+              usernameCheckError
+                ? '接続できません。時間をおいて再試行してください'
+                : usernameChecking
+                  ? 'Checking…'
+                  : undefined
+            }
           />
           {/* TextInputのメッセージ枠を利用するため追加の枠は不要 */}
         </View>
