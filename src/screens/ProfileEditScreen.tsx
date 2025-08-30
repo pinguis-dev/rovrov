@@ -594,7 +594,12 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
           contentContainerStyle={styles.scrollContent}
         >
           {/* ステップヘッダー */}
-          <View style={styles.stepHeader}>
+          <View
+            style={[
+              styles.stepHeader,
+              currentStep === ProfileSetupStep.AVATAR ? styles.stepHeaderTight : null,
+            ]}
+          >
             <Text style={styles.stepTitle}>{getStepTitle()}</Text>
           </View>
 
@@ -824,6 +829,9 @@ const styles = StyleSheet.create({
   stepHeader: {
     alignItems: 'center',
     marginBottom: 88,
+  },
+  stepHeaderTight: {
+    marginBottom: 48,
   },
   stepTitle: {
     color: colors.neutral[900],
