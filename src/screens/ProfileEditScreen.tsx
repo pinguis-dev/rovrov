@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { defaultAvatar } from '../assets';
 import { TextInput, LoadingSpinner } from '../components/ui';
 import { COUNTRIES, getCountry, getRegion, Country, Region } from '../data/geo';
 import { useDebounce } from '../hooks/useDebounce';
@@ -375,9 +376,7 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
         {watchedAvatarUrl ? (
           <Image source={{ uri: watchedAvatarUrl }} style={styles.avatarImage} />
         ) : (
-          <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarPlaceholderText}>👤</Text>
-          </View>
+          <Image source={defaultAvatar} style={styles.avatarImage} />
         )}
         {isUploadingAvatar && (
           <View style={styles.avatarUploadOverlay}>
@@ -456,7 +455,10 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
 
         return (
           <View style={styles.inputContainer}>
-            <TouchableOpacity style={styles.selectButton} onPress={openCountry}>
+            <TouchableOpacity
+              style={[styles.selectButton, !country && styles.selectButtonTight]}
+              onPress={openCountry}
+            >
               <Text style={styles.selectText}>{countryLabel}</Text>
             </TouchableOpacity>
 
@@ -659,15 +661,6 @@ const styles = StyleSheet.create({
     borderRadius: 75,
     height: 150,
     width: 150,
-  },
-  avatarPlaceholder: {
-    alignItems: 'center',
-    height: 150,
-    justifyContent: 'center',
-    width: 150,
-  },
-  avatarPlaceholderText: {
-    fontSize: 60,
   },
   avatarStepContainer: {
     alignItems: 'center',
