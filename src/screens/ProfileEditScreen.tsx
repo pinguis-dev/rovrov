@@ -56,6 +56,30 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
   const [regionModalVisible, setRegionModalVisible] = useState(false);
   const [selectedCountryCode, setSelectedCountryCode] = useState<string | null>(null);
   const [selectedRegionCode, setSelectedRegionCode] = useState<string | null>(null);
+  const regionListRef = useRef<FlatList<Region>>(null);
+
+  // When region modal opens, center Tokyo (JP-13) or current selection
+  useEffect(() => {
+    if (!regionModalVisible) return;
+    const country = getCountry(selectedCountryCode);
+    const regions = country?.regions ?? [];
+    let index = -1;
+    if (selectedRegionCode) {
+      index = regions.findIndex((r) => r.code === selectedRegionCode);
+    }
+    if (index < 0 && selectedCountryCode === 'JP') {
+      index = regions.findIndex((r) => r.code === 'JP-13' || r.name === 'Tokyo');
+    }
+    if (index >= 0) {
+      requestAnimationFrame(() => {
+        try {
+          regionListRef.current?.scrollToIndex({ index, animated: false, viewPosition: 0.5 });
+        } catch {
+          // ignore
+        }
+      });
+    }
+  }, [regionModalVisible, selectedCountryCode, selectedRegionCode]);
 
   const {
     control,
@@ -431,6 +455,8 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
           setRegionModalVisible(false);
         };
 
+        // Scroll handled by outer useEffect when modal becomes visible
+
         return (
           <View style={styles.inputContainer}>
             <TouchableOpacity style={styles.selectButton} onPress={openCountry}>
@@ -480,6 +506,7 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
                 <View style={styles.modalSheet}>
                   <Text style={styles.modalTitle}>地域を選択</Text>
                   <FlatList
+                    ref={regionListRef}
                     data={country?.regions ?? []}
                     keyExtractor={(item) => item.code}
                     renderItem={({ item }) => (
@@ -490,6 +517,19 @@ export const ProfileEditScreen: React.FC<ProfileEditScreenProps> = ({ navigation
                         <Text style={styles.modalItemText}>{item.name}</Text>
                       </TouchableOpacity>
                     )}
+                    onScrollToIndexFailed={(info) => {
+                      setTimeout(() => {
+                        try {
+                          regionListRef.current?.scrollToIndex({
+                            index: info.index,
+                            animated: false,
+                            viewPosition: 0.5,
+                          });
+                        } catch {
+                          // ignore
+                        }
+                      }, 50);
+                    }}
                   />
                   <TouchableOpacity
                     onPress={() => setRegionModalVisible(false)}
