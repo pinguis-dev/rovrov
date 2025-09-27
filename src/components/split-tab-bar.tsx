@@ -17,7 +17,6 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
   const insets = useSafeAreaInsets();
   const visibility = useTabBarVisibilityValue();
 
-  const border = tokens.borders['border-0.3'];
   const shadow = tokens.shadows['shadow-soft'];
 
   const horizontalPadding = tokens.spacing['space-24'];
@@ -65,8 +64,6 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
             styles.tabGroup,
             {
               backgroundColor: tokens.colors['color-surface-glass'],
-              borderColor: tokens.colors[border.color],
-              borderWidth: border.width,
               paddingHorizontal: tokens.spacing['space-12'],
               gap: innerGap,
               shadowColor: shadow.color,
@@ -152,8 +149,6 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
             styles.postButton,
             {
               backgroundColor: tokens.colors['color-surface-elevated'],
-              borderColor: tokens.colors[border.color],
-              borderWidth: border.width,
               shadowColor: shadow.color,
               shadowOffset: shadow.offset,
               shadowOpacity: shadow.opacity,
