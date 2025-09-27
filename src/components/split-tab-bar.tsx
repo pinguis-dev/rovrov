@@ -81,7 +81,11 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
   const iconHighlightColor = 'rgba(255, 255, 255, 0.24)';
   const shadowExtension = tokens.spacing['space-64'] + tokens.spacing['space-24'];
   const shadowHeight = actionHeight + bottomPadding + shadowExtension;
-  const shadowColors = ['rgba(15, 23, 42, 0)', 'rgba(15, 23, 42, 0.16)', 'rgba(15, 23, 42, 0.32)'];
+  const shadowColors = [
+    'rgba(15, 23, 42, 0)',
+    'rgba(15, 23, 42, 0.16)',
+    'rgba(15, 23, 42, 0.32)',
+  ] as const;
   const tabBarBlurIntensity = 22;
   const ctaBlurIntensity = 25;
   const highlightValuesRef = useRef<Record<string, Animated.Value>>({});

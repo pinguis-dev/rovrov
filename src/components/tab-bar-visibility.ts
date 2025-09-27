@@ -7,7 +7,8 @@ let currentState: 'shown' | 'hidden' = 'shown';
 let activeAnimation: Animated.CompositeAnimation | null = null;
 
 const easing = Easing.bezier(0.2, 0, 0.2, 1);
-const duration = 220;
+const duration = 340;
+const animationDelay = 260;
 
 function runAnimation(target: 0 | 1) {
   const nextState: 'shown' | 'hidden' = target === 0 ? 'shown' : 'hidden';
@@ -20,6 +21,7 @@ function runAnimation(target: 0 | 1) {
     toValue: target,
     duration,
     easing,
+    delay: animationDelay,
     useNativeDriver: true,
   });
   currentState = nextState;
