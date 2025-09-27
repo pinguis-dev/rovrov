@@ -2,7 +2,7 @@ import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useMemo } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTabBarVisibilityValue } from '@/components/tab-bar-visibility';
@@ -16,29 +16,38 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
   const tokens = useDesignTokens();
   const insets = useSafeAreaInsets();
   const visibility = useTabBarVisibilityValue();
-  const translateY = visibility.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 160],
-  });
 
   const border = tokens.borders['border-0.3'];
-  const labelToken = tokens.typography['typo-footnote'];
   const shadow = tokens.shadows['shadow-soft'];
 
   const horizontalPadding = tokens.spacing['space-24'];
-  const verticalInset = tokens.spacing['space-16'];
   const outerGap = tokens.spacing['space-16'];
   const innerGap = tokens.spacing['space-12'];
+  const actionHeight = 56;
+  const baseBottomOffset = tokens.spacing['space-8'];
+  const bottomOffset = insets.bottom > 0 ? 0 : baseBottomOffset;
+  const bottomPadding = insets.bottom + bottomOffset;
+  const hideDistance = bottomPadding + actionHeight + baseBottomOffset;
+
+  const translateY = useMemo(
+    () =>
+      visibility.interpolate({
+        inputRange: [0, 1],
+        outputRange: [0, hideDistance],
+      }),
+    [hideDistance],
+  );
 
   const containerStyle = useMemo(
     () => [
       styles.container,
       {
-        paddingBottom: insets.bottom + verticalInset,
+        paddingBottom: bottomPadding,
         paddingHorizontal: horizontalPadding,
+        height: actionHeight + bottomPadding,
       },
     ],
-    [horizontalPadding, insets.bottom, verticalInset],
+    [actionHeight, bottomPadding, horizontalPadding],
   );
 
   const leftRoutes = LEFT_ROUTE_ORDER.map((routeName) =>
@@ -50,7 +59,7 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
       pointerEvents="box-none"
       style={[containerStyle, { transform: [{ translateY }] }]}
     >
-      <View style={[styles.innerWrapper, { gap: outerGap }]}>
+      <View style={[styles.innerWrapper, { gap: outerGap, height: actionHeight }]}>
         <View
           style={[
             styles.tabGroup,
@@ -58,7 +67,6 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
               backgroundColor: tokens.colors['color-surface-glass'],
               borderColor: tokens.colors[border.color],
               borderWidth: border.width,
-              paddingVertical: tokens.spacing['space-12'],
               paddingHorizontal: tokens.spacing['space-12'],
               gap: innerGap,
               shadowColor: shadow.color,
@@ -66,6 +74,9 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
               shadowOpacity: shadow.opacity,
               shadowRadius: shadow.radius,
               elevation: shadow.elevation,
+              height: actionHeight,
+              borderRadius: actionHeight / 2,
+              alignItems: 'center',
             },
           ]}
         >
@@ -80,9 +91,6 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
             const iconColor = isFocused
               ? tokens.colors['color-icon-active']
               : tokens.colors['color-icon-default'];
-            const textColor = isFocused
-              ? tokens.colors['color-text-title']
-              : tokens.colors['color-text-body'];
 
             const onPress = () => {
               if (isFocused) {
@@ -106,7 +114,7 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
             const icon = options.tabBarIcon?.({
               focused: isFocused,
               color: iconColor,
-              size: 28,
+              size: 22,
             });
 
             return (
@@ -114,29 +122,18 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
                 key={route.key}
                 accessibilityRole="button"
                 accessibilityState={isFocused ? { selected: true } : {}}
-                accessibilityLabel={options.tabBarAccessibilityLabel}
+                accessibilityLabel={options.tabBarAccessibilityLabel ?? labelText}
                 testID={options.tabBarButtonTestID}
                 onPress={onPress}
                 onLongPress={onLongPress}
                 style={({ pressed }) => [
                   styles.tabButton,
                   {
-                    paddingVertical: tokens.spacing['space-4'],
                     opacity: pressed ? 0.85 : 1,
                   },
                 ]}
               >
                 <View>{icon}</View>
-                <Text
-                  style={{
-                    fontFamily: labelToken.fontFamily,
-                    fontSize: 12,
-                    letterSpacing: labelToken.letterSpacing,
-                    color: textColor,
-                  }}
-                >
-                  {labelText}
-                </Text>
               </Pressable>
             );
           })}
@@ -163,6 +160,9 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
               shadowRadius: shadow.radius,
               elevation: shadow.elevation,
               opacity: pressed ? 0.86 : 1,
+              height: actionHeight,
+              width: actionHeight,
+              borderRadius: actionHeight / 2,
             },
           ]}
         >
@@ -191,19 +191,16 @@ const styles = StyleSheet.create({
   tabGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 999,
     flexShrink: 1,
   },
   tabButton: {
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'center',
     paddingHorizontal: 12,
-    minWidth: 64,
+    minWidth: 56,
+    height: '100%',
   },
   postButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
   },
