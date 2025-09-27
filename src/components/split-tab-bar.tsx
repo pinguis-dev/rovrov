@@ -3,6 +3,7 @@ import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useMemo, useRef } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTabBarVisibilityValue } from '@/components/tab-bar-visibility';
@@ -28,6 +29,8 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
   const bottomPadding = insets.bottom + bottomOffset;
   const hideDistance = bottomPadding + actionHeight + baseBottomOffset;
   const iconHighlightColor = 'rgba(58, 58, 58, 0.08)';
+  const tabBarBlurIntensity = 120;
+  const ctaBlurIntensity = 110;
   const highlightValuesRef = useRef<Record<string, Animated.Value>>({});
   const highlightStateRef = useRef<Record<string, boolean>>({});
 
@@ -66,9 +69,6 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
           style={[
             styles.tabGroup,
             {
-              backgroundColor: tokens.colors['color-surface-glass'],
-              paddingHorizontal: tokens.spacing['space-4'],
-              gap: innerGap,
               shadowColor: shadow.color,
               shadowOffset: shadow.offset,
               shadowOpacity: shadow.opacity,
@@ -76,82 +76,88 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
               elevation: shadow.elevation,
               height: actionHeight,
               borderRadius: actionHeight,
-              alignItems: 'center',
             },
           ]}
         >
-          {leftRoutes.map((route) => {
-            const routeIndex = state.routes.findIndex((item) => item.key === route.key);
-            const isFocused = state.index === routeIndex;
-            const { options } = descriptors[route.key];
-            const storedHighlight = highlightValuesRef.current[route.key];
-            const highlightValue =
-              storedHighlight ?? new Animated.Value(isFocused ? 1 : 0);
+          <BlurView
+            intensity={tabBarBlurIntensity}
+            tint="light"
+            style={[styles.blurBackground, { borderRadius: actionHeight }]}
+          />
+          <View pointerEvents="none" style={[styles.blurOverlay, { borderRadius: actionHeight }]} />
+          <View style={[styles.tabContent, { paddingHorizontal: tokens.spacing['space-4'] }]}>
+            {leftRoutes.map((route) => {
+              const routeIndex = state.routes.findIndex((item) => item.key === route.key);
+              const isFocused = state.index === routeIndex;
+              const { options } = descriptors[route.key];
+              const storedHighlight = highlightValuesRef.current[route.key];
+              const highlightValue =
+                storedHighlight ?? new Animated.Value(isFocused ? 1 : 0);
 
-            if (!storedHighlight) {
-              highlightValuesRef.current[route.key] = highlightValue;
-              highlightStateRef.current[route.key] = isFocused;
-            } else if (highlightStateRef.current[route.key] !== isFocused) {
-              highlightStateRef.current[route.key] = isFocused;
-              Animated.timing(highlightValue, {
-                toValue: isFocused ? 1 : 0,
-                duration: 320,
-                easing: Easing.out(Easing.quad),
-                useNativeDriver: true,
-              }).start();
-            }
-
-            const defaultLabel = route.name.charAt(0).toUpperCase() + route.name.slice(1);
-            const rawLabel = options.tabBarLabel ?? options.title ?? defaultLabel;
-            const labelText = typeof rawLabel === 'string' ? rawLabel : defaultLabel;
-
-            const activeIconElement = options.tabBarIcon?.({
-              focused: true,
-              color: tokens.colors['color-icon-active'],
-              size: 22,
-            });
-
-            const inactiveIconElement = options.tabBarIcon?.({
-              focused: false,
-              color: tokens.colors['color-icon-default'],
-              size: 22,
-            });
-
-            const onPress = () => {
-              if (isFocused) {
-                return;
+              if (!storedHighlight) {
+                highlightValuesRef.current[route.key] = highlightValue;
+                highlightStateRef.current[route.key] = isFocused;
+              } else if (highlightStateRef.current[route.key] !== isFocused) {
+                highlightStateRef.current[route.key] = isFocused;
+                Animated.timing(highlightValue, {
+                  toValue: isFocused ? 1 : 0,
+                  duration: 320,
+                  easing: Easing.out(Easing.quad),
+                  useNativeDriver: true,
+                }).start();
               }
 
-              if (process.env.EXPO_OS === 'ios') {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
-              }
+              const defaultLabel = route.name.charAt(0).toUpperCase() + route.name.slice(1);
+              const rawLabel = options.tabBarLabel ?? options.title ?? defaultLabel;
+              const labelText = typeof rawLabel === 'string' ? rawLabel : defaultLabel;
 
-              navigation.navigate(route.name);
-            };
-
-            const onLongPress = () => {
-              navigation.emit({
-                type: 'tabLongPress',
-                target: route.key,
+              const activeIconElement = options.tabBarIcon?.({
+                focused: true,
+                color: tokens.colors['color-text-title'],
+                size: 22,
               });
-            };
 
-            return (
-              <Pressable
-                key={route.key}
-                accessibilityRole="button"
-                accessibilityState={isFocused ? { selected: true } : {}}
-                accessibilityLabel={options.tabBarAccessibilityLabel ?? labelText}
-                testID={options.tabBarButtonTestID}
-                onPress={onPress}
-                onLongPress={onLongPress}
-                style={({ pressed }) => [
-                  styles.tabButton,
-                  {
-                    opacity: pressed ? 0.85 : 1,
-                  },
-                ]}
-              >
+              const inactiveIconElement = options.tabBarIcon?.({
+                focused: false,
+                color: tokens.colors['color-icon-default'],
+                size: 22,
+              });
+
+              const onPress = () => {
+                if (isFocused) {
+                  return;
+                }
+
+                if (process.env.EXPO_OS === 'ios') {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
+                }
+
+                navigation.navigate(route.name);
+              };
+
+              const onLongPress = () => {
+                navigation.emit({
+                  type: 'tabLongPress',
+                  target: route.key,
+                });
+              };
+
+              return (
+                <Pressable
+                  key={route.key}
+                  accessibilityRole="button"
+                  accessibilityState={isFocused ? { selected: true } : {}}
+                  accessibilityLabel={options.tabBarAccessibilityLabel ?? labelText}
+                  testID={options.tabBarButtonTestID}
+                  onPress={onPress}
+                  onLongPress={onLongPress}
+                  style={({ pressed }) => [
+                    styles.tabButton,
+                    {
+                      opacity: pressed ? 0.85 : 1,
+                    },
+                  ]}
+                >
                 <View
                   style={[
                     styles.iconPill,
@@ -199,6 +205,7 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
               </Pressable>
             );
           })}
+          </View>
         </View>
 
         <Pressable
@@ -213,7 +220,6 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
           style={({ pressed }) => [
             styles.postButton,
             {
-              backgroundColor: tokens.colors['color-surface-elevated'],
               shadowColor: shadow.color,
               shadowOffset: shadow.offset,
               shadowOpacity: shadow.opacity,
@@ -223,9 +229,16 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
               height: actionHeight,
               width: actionHeight,
               borderRadius: actionHeight / 2,
+              overflow: 'hidden',
             },
           ]}
         >
+          <BlurView
+            intensity={ctaBlurIntensity}
+            tint="light"
+            style={[styles.blurBackground, { borderRadius: actionHeight / 2 }]}
+          />
+          <View pointerEvents="none" style={[styles.blurOverlay, { borderRadius: actionHeight / 2 }]} />
           <PostIcon color={tokens.colors['color-accent-primary']} size={32} />
         </Pressable>
       </View>
@@ -255,6 +268,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    overflow: 'hidden',
+  },
+  tabContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: '100%',
   },
   tabButton: {
     flex: 1,
@@ -280,5 +300,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     flexShrink: 0,
+  },
+  blurBackground: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  blurOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
   },
 });
