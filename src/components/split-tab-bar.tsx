@@ -1,6 +1,7 @@
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useMemo, useRef } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
@@ -67,17 +68,20 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
   const horizontalPadding = tokens.spacing['space-24'];
   const outerGap = tokens.spacing['space-16'];
   const innerGap = 0;
-  const actionHeight = 60;
+  const actionHeight = 56;
   const baseBottomOffset = tokens.spacing['space-8'];
   const bottomOffset = insets.bottom > 0 ? 0 : baseBottomOffset;
   const bottomPadding = insets.bottom + bottomOffset;
   const hideDistance = bottomPadding + actionHeight + baseBottomOffset;
   const surfaceBaseColor = tokens.colors['color-surface-base'];
   const surfaceLuminance = getRelativeLuminance(surfaceBaseColor);
-  const overlayColor = 'rgba(240, 230, 210, 0.22)';
+  const overlayColor = 'rgba(255, 255, 255, 0.40)';
   const blurTint = 'light';
-  const iconHighlightColor = 'rgba(255, 255, 255, 0.18)';
   const iconColor = tokens.colors['color-text-title'];
+  const iconHighlightColor = 'rgba(255, 255, 255, 0.24)';
+  const shadowExtension = tokens.spacing['space-64'] + tokens.spacing['space-24'];
+  const shadowHeight = actionHeight + bottomPadding + shadowExtension;
+  const shadowColors = ['rgba(15, 23, 42, 0)', 'rgba(15, 23, 42, 0.16)', 'rgba(15, 23, 42, 0.32)'];
   const tabBarBlurIntensity = 22;
   const ctaBlurIntensity = 25;
   const highlightValuesRef = useRef<Record<string, Animated.Value>>({});
@@ -113,6 +117,14 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
       pointerEvents="box-none"
       style={[containerStyle, { transform: [{ translateY }] }]}
     >
+      <LinearGradient
+        pointerEvents="none"
+        colors={shadowColors}
+        locations={[0, 0.8, 1]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={[styles.shadowBackdrop, { height: shadowHeight }]}
+      />
       <View style={[styles.innerWrapper, { gap: outerGap, height: actionHeight }]}>
         <View
           style={[
@@ -125,8 +137,8 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
               elevation: Math.max(1, Math.round(shadow.elevation * 0.6)),
               height: actionHeight,
               borderRadius: actionHeight / 2,
-              borderWidth: 0.5,
-              borderColor: 'rgba(255,255,255,0.4)',
+              borderWidth: 1.0,
+              borderColor: 'rgba(255,255,255,0.5)',
             },
           ]}
         >
@@ -168,13 +180,13 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
               const activeIconElement = options.tabBarIcon?.({
                 focused: true,
                 color: iconColor,
-                size: 28,
+                size: 24,
               });
 
               const inactiveIconElement = options.tabBarIcon?.({
                 focused: false,
                 color: iconColor,
-                size: 28,
+                size: 24,
               });
 
               const onPress = () => {
@@ -287,6 +299,8 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
               width: actionHeight,
               borderRadius: actionHeight / 2,
               overflow: 'hidden',
+              borderWidth: 1.0,
+              borderColor: 'rgba(255,255,255,0.5)',
             },
           ]}
         >
@@ -323,6 +337,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 480,
     alignSelf: 'center',
+    zIndex: 1,
   },
   tabGroup: {
     flexDirection: 'row',
@@ -367,5 +382,12 @@ const styles = StyleSheet.create({
   blurOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'transparent',
+  },
+  shadowBackdrop: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 0,
   },
 });
