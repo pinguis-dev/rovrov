@@ -77,6 +77,7 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
   const overlayColor = 'rgba(240, 230, 210, 0.22)';
   const blurTint = 'light';
   const iconHighlightColor = 'rgba(255, 255, 255, 0.18)';
+  const iconColor = tokens.colors['color-text-title'];
   const tabBarBlurIntensity = 22;
   const ctaBlurIntensity = 25;
   const highlightValuesRef = useRef<Record<string, Animated.Value>>({});
@@ -166,14 +167,14 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
 
               const activeIconElement = options.tabBarIcon?.({
                 focused: true,
-                color: tokens.colors['color-text-title'],
-                size: 36,
+                color: iconColor,
+                size: 28,
               });
 
               const inactiveIconElement = options.tabBarIcon?.({
                 focused: false,
-                color: tokens.colors['color-icon-default'],
-                size: 36,
+                color: iconColor,
+                size: 28,
               });
 
               const onPress = () => {
@@ -216,7 +217,8 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
                     styles.iconPill,
                     {
                       paddingHorizontal: tokens.spacing['space-16'],
-                      paddingVertical: tokens.spacing['space-8'],
+                      paddingVertical: tokens.spacing['space-4'],
+                      height: '100%',
                       borderRadius: actionHeight / 2,
                       overflow: 'hidden',
                     },
@@ -227,6 +229,8 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
                     style={[
                       styles.iconHighlight,
                       {
+                        top: tokens.spacing['space-4'],
+                        bottom: tokens.spacing['space-4'],
                         borderRadius: actionHeight,
                         backgroundColor: iconHighlightColor,
                         opacity: highlightValue,
@@ -295,7 +299,7 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
             pointerEvents="none"
             style={[styles.blurOverlay, { borderRadius: actionHeight / 2, backgroundColor: overlayColor }]}
           />
-          <PostIcon color={tokens.colors['color-accent-primary']} size={32} />
+          <PostIcon color={iconColor} size={24} />
         </Pressable>
       </View>
     </Animated.View>

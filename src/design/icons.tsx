@@ -38,7 +38,7 @@ export function TabIcon({
   color: string;
   size?: number;
 }) {
-  const glyph = tabIconGlyphs[icon].fill;
+  const glyph = focused ? tabIconGlyphs[icon].fill : tabIconGlyphs[icon].line;
 
   return <RemixIcon name={glyph} size={size} color={color} />;
 }
