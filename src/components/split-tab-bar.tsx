@@ -1,8 +1,8 @@
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { useMemo } from 'react';
-import { Animated, Pressable, StyleSheet, View } from 'react-native';
+import { useMemo, useRef } from 'react';
+import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTabBarVisibilityValue } from '@/components/tab-bar-visibility';
@@ -27,6 +27,9 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
   const bottomOffset = insets.bottom > 0 ? 0 : baseBottomOffset;
   const bottomPadding = insets.bottom + bottomOffset;
   const hideDistance = bottomPadding + actionHeight + baseBottomOffset;
+  const iconHighlightColor = 'rgba(58, 58, 58, 0.08)';
+  const highlightValuesRef = useRef<Record<string, Animated.Value>>({});
+  const highlightStateRef = useRef<Record<string, boolean>>({});
 
   const translateY = useMemo(
     () =>
@@ -81,13 +84,38 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
             const routeIndex = state.routes.findIndex((item) => item.key === route.key);
             const isFocused = state.index === routeIndex;
             const { options } = descriptors[route.key];
+            const storedHighlight = highlightValuesRef.current[route.key];
+            const highlightValue =
+              storedHighlight ?? new Animated.Value(isFocused ? 1 : 0);
+
+            if (!storedHighlight) {
+              highlightValuesRef.current[route.key] = highlightValue;
+              highlightStateRef.current[route.key] = isFocused;
+            } else if (highlightStateRef.current[route.key] !== isFocused) {
+              highlightStateRef.current[route.key] = isFocused;
+              Animated.timing(highlightValue, {
+                toValue: isFocused ? 1 : 0,
+                duration: 320,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+              }).start();
+            }
 
             const defaultLabel = route.name.charAt(0).toUpperCase() + route.name.slice(1);
             const rawLabel = options.tabBarLabel ?? options.title ?? defaultLabel;
             const labelText = typeof rawLabel === 'string' ? rawLabel : defaultLabel;
-            const iconColor = isFocused
-              ? tokens.colors['color-icon-active']
-              : tokens.colors['color-icon-default'];
+
+            const activeIconElement = options.tabBarIcon?.({
+              focused: true,
+              color: tokens.colors['color-icon-active'],
+              size: 22,
+            });
+
+            const inactiveIconElement = options.tabBarIcon?.({
+              focused: false,
+              color: tokens.colors['color-icon-default'],
+              size: 22,
+            });
 
             const onPress = () => {
               if (isFocused) {
@@ -108,12 +136,6 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
               });
             };
 
-            const icon = options.tabBarIcon?.({
-              focused: isFocused,
-              color: iconColor,
-              size: 22,
-            });
-
             return (
               <Pressable
                 key={route.key}
@@ -130,7 +152,50 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
                   },
                 ]}
               >
-                <View>{icon}</View>
+                <View
+                  style={[
+                    styles.iconPill,
+                    {
+                      paddingHorizontal: tokens.spacing['space-16'],
+                      paddingVertical: tokens.spacing['space-8'],
+                      borderRadius: actionHeight,
+                      overflow: 'hidden',
+                    },
+                  ]}
+                >
+                  <Animated.View
+                    pointerEvents="none"
+                    style={[
+                      styles.iconHighlight,
+                      {
+                        borderRadius: actionHeight,
+                        backgroundColor: iconHighlightColor,
+                        opacity: highlightValue,
+                      },
+                    ]}
+                  />
+                  <View style={styles.iconStack}>
+                    {inactiveIconElement ? (
+                      <Animated.View
+                        pointerEvents="none"
+                        style={{
+                          position: 'absolute',
+                          opacity: highlightValue.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [1, 0],
+                          }),
+                        }}
+                      >
+                        {inactiveIconElement}
+                      </Animated.View>
+                    ) : null}
+                    {activeIconElement ? (
+                      <Animated.View pointerEvents="none" style={{ opacity: highlightValue }}>
+                        {activeIconElement}
+                      </Animated.View>
+                    ) : inactiveIconElement}
+                  </View>
+                </View>
               </Pressable>
             );
           })}
@@ -197,6 +262,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 16,
     height: '100%',
+  },
+  iconPill: {
+    minWidth: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconHighlight: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  iconStack: {
+    minWidth: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   postButton: {
     justifyContent: 'center',
