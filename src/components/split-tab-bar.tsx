@@ -1,9 +1,9 @@
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useMemo, useRef } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
-import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTabBarVisibilityValue } from '@/components/tab-bar-visibility';
@@ -67,17 +67,18 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
   const horizontalPadding = tokens.spacing['space-24'];
   const outerGap = tokens.spacing['space-16'];
   const innerGap = 0;
-  const actionHeight = 56;
+  const actionHeight = 60;
   const baseBottomOffset = tokens.spacing['space-8'];
   const bottomOffset = insets.bottom > 0 ? 0 : baseBottomOffset;
   const bottomPadding = insets.bottom + bottomOffset;
   const hideDistance = bottomPadding + actionHeight + baseBottomOffset;
   const surfaceBaseColor = tokens.colors['color-surface-base'];
   const surfaceLuminance = getRelativeLuminance(surfaceBaseColor);
-  const overlayColor = surfaceLuminance > 0.7 ? 'rgba(196, 203, 217, 0.18)' : 'rgba(255, 255, 255, 0.22)';
-  const iconHighlightColor = 'rgba(58, 58, 58, 0.08)';
-  const tabBarBlurIntensity = 85;
-  const ctaBlurIntensity = 72;
+  const overlayColor = 'rgba(240, 230, 210, 0.22)';
+  const blurTint = 'light';
+  const iconHighlightColor = 'rgba(255, 255, 255, 0.18)';
+  const tabBarBlurIntensity = 22;
+  const ctaBlurIntensity = 25;
   const highlightValuesRef = useRef<Record<string, Animated.Value>>({});
   const highlightStateRef = useRef<Record<string, boolean>>({});
 
@@ -118,17 +119,19 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
             {
               shadowColor: shadow.color,
               shadowOffset: shadow.offset,
-              shadowOpacity: shadow.opacity * 0.6,
-              shadowRadius: shadow.radius * 0.8,
+              shadowOpacity: shadow.opacity * 0.45,
+              shadowRadius: shadow.radius * 0.7,
               elevation: Math.max(1, Math.round(shadow.elevation * 0.6)),
               height: actionHeight,
-              borderRadius: actionHeight,
+              borderRadius: actionHeight / 2,
+              borderWidth: 0.5,
+              borderColor: 'rgba(255,255,255,0.4)',
             },
           ]}
         >
           <BlurView
             intensity={tabBarBlurIntensity}
-            tint="light"
+            tint={blurTint}
             style={[styles.blurBackground, { borderRadius: actionHeight }]}
           />
           <View
@@ -164,13 +167,13 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
               const activeIconElement = options.tabBarIcon?.({
                 focused: true,
                 color: tokens.colors['color-text-title'],
-                size: 22,
+                size: 36,
               });
 
               const inactiveIconElement = options.tabBarIcon?.({
                 focused: false,
                 color: tokens.colors['color-icon-default'],
-                size: 22,
+                size: 36,
               });
 
               const onPress = () => {
@@ -214,7 +217,7 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
                     {
                       paddingHorizontal: tokens.spacing['space-16'],
                       paddingVertical: tokens.spacing['space-8'],
-                      borderRadius: actionHeight,
+                      borderRadius: actionHeight / 2,
                       overflow: 'hidden',
                     },
                   ]}
@@ -272,8 +275,8 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
             {
               shadowColor: shadow.color,
               shadowOffset: shadow.offset,
-              shadowOpacity: shadow.opacity * 0.6,
-              shadowRadius: shadow.radius * 0.8,
+              shadowOpacity: shadow.opacity * 0.45,
+              shadowRadius: shadow.radius * 0.7,
               elevation: Math.max(1, Math.round(shadow.elevation * 0.6)),
               opacity: pressed ? 0.86 : 1,
               height: actionHeight,
@@ -285,7 +288,7 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
         >
           <BlurView
             intensity={ctaBlurIntensity}
-            tint="light"
+            tint={blurTint}
             style={[styles.blurBackground, { borderRadius: actionHeight / 2 }]}
           />
           <View
@@ -337,7 +340,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   iconPill: {
-    minWidth: 40,
+    minWidth: 64,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -345,7 +348,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
   },
   iconStack: {
-    minWidth: 22,
+    minWidth: 36,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -359,6 +362,6 @@ const styles = StyleSheet.create({
   },
   blurOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(220, 226, 238, 0.16)',
+    backgroundColor: 'transparent',
   },
 });

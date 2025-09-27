@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,6 +23,33 @@ const timelineCards = [
     caption:
       'Street musician let me try the synth patch before the crowd gathered. Saved a short clip to remix later tonight.',
     tags: ['music', 'nightlife'],
+  },
+];
+
+const cafeShots = [
+  {
+    id: 'cafe-1',
+    title: 'Latte Art Workshop',
+    location: 'Meguro, Tokyo',
+    description: '午後の柔らかい光が差し込むカウンターで、バリスタが描いた最新のラテアート。',
+    imageUrl:
+      'https://images.unsplash.com/photo-1470337458703-46ad1756a187?auto=format&fit=crop&w=1200&q=80',
+  },
+  {
+    id: 'cafe-2',
+    title: 'Morning Brew Corner',
+    location: 'Daikanyama, Tokyo',
+    description: 'オールドウッドのテーブルと手作りマグに映える浅煎りの香り。',
+    imageUrl:
+      'https://images.unsplash.com/photo-1504753793650-d4a2b783c15e?auto=format&fit=crop&w=1200&q=80',
+  },
+  {
+    id: 'cafe-3',
+    title: 'Rooftop Espresso Bar',
+    location: 'Shinjuku, Tokyo',
+    description: '青いネオンが灯る夕暮れのテラスで、シティラインを眺めながらの一杯。',
+    imageUrl:
+      'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80',
   },
 ];
 
@@ -128,6 +156,58 @@ export default function TimelineScreen() {
             </View>
           </View>
         ))}
+
+        <View style={{ gap: tokens.spacing['space-8'] }}>
+          <Text style={getTypographyStyle(tokens, 'typo-title')}>カフェフォトギャラリー</Text>
+          <Text style={getTypographyStyle(tokens, 'typo-body')}>
+            ブラーの質感を確かめるためのショットです。透明感のあるナビゲーションと一緒に、色味やシャドウの映り込みをチェックしてみてください。
+          </Text>
+        </View>
+
+        <View style={{ gap: tokens.spacing['space-16'] }}>
+          {cafeShots.map((shot) => (
+            <View
+              key={shot.id}
+              style={{
+                backgroundColor: tokens.colors['color-surface-glass'],
+                borderRadius: 32,
+                borderWidth: surfaceBorder.width,
+                borderColor: tokens.colors[surfaceBorder.color],
+                padding: tokens.spacing['space-16'],
+                gap: tokens.spacing['space-12'],
+                shadowColor: cardShadow.color,
+                shadowOffset: { width: cardShadow.offset.width, height: cardShadow.offset.height / 2 },
+                shadowOpacity: cardShadow.opacity * 0.7,
+                shadowRadius: cardShadow.radius * 0.8,
+                elevation: cardShadow.elevation,
+              }}
+            >
+              <Image
+                source={{ uri: shot.imageUrl }}
+                style={{
+                  width: '100%',
+                  aspectRatio: 4 / 3,
+                  borderRadius: 24,
+                  backgroundColor: tokens.colors['color-surface-elevated'],
+                }}
+                contentFit="cover"
+                transition={200}
+              />
+              <View style={{ gap: tokens.spacing['space-4'] }}>
+                <Text style={getTypographyStyle(tokens, 'typo-title')}>{shot.title}</Text>
+                <Text
+                  style={{
+                    ...getTypographyStyle(tokens, 'typo-footnote'),
+                    color: tokens.colors['color-text-foot'],
+                  }}
+                >
+                  {shot.location}
+                </Text>
+              </View>
+              <Text style={getTypographyStyle(tokens, 'typo-body')}>{shot.description}</Text>
+            </View>
+          ))}
+        </View>
       </ScrollView>
     </LinearGradient>
   );
