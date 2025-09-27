@@ -2,6 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useBottomTabBarAutoHide } from '@/components/tab-bar-visibility';
 import { useDesignTokens } from '@/design/design-system';
 import type { TypographyTokenName } from '@/design/tokens';
 
@@ -45,6 +46,7 @@ export default function NotificationsScreen() {
   const tokens = useDesignTokens();
   const insets = useSafeAreaInsets();
   const border = tokens.borders['border-0.3'];
+  const handleScroll = useBottomTabBarAutoHide();
 
   return (
     <LinearGradient
@@ -53,6 +55,8 @@ export default function NotificationsScreen() {
       style={styles.gradient}
     >
       <ScrollView
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
         contentContainerStyle={{
           paddingTop: insets.top + tokens.spacing['space-32'],
           paddingBottom: tokens.spacing['space-24'],
