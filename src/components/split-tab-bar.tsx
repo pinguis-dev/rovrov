@@ -90,8 +90,17 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
   const ctaBlurIntensity = 25;
   const highlightValuesRef = useRef<Record<string, Animated.Value>>({});
   const highlightStateRef = useRef<Record<string, boolean>>({});
+  const postOpacity = useMemo(
+    () =>
+      visibility.interpolate({
+        inputRange: [0, 1],
+        outputRange: [1, 0.35],
+        extrapolate: 'clamp',
+      }),
+    [visibility],
+  );
 
-  const translateY = useMemo(
+  const barTranslateY = useMemo(
     () =>
       visibility.interpolate({
         inputRange: [0, 1],
@@ -117,20 +126,25 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
   ).filter((route): route is (typeof state.routes)[number] => Boolean(route));
 
   return (
-    <Animated.View
+    <View
       pointerEvents="box-none"
-      style={[containerStyle, { transform: [{ translateY }] }]}
+      style={containerStyle}
     >
-      <LinearGradient
+      <Animated.View
         pointerEvents="none"
-        colors={shadowColors}
-        locations={[0, 0.8, 1]}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={[styles.shadowBackdrop, { height: shadowHeight }]}
-      />
+        style={[styles.shadowWrapper, { transform: [{ translateY: barTranslateY }] }]}
+      >
+        <LinearGradient
+          pointerEvents="none"
+          colors={shadowColors}
+          locations={[0, 0.8, 1]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={[styles.shadowBackdrop, { height: shadowHeight }]}
+        />
+      </Animated.View>
       <View style={[styles.innerWrapper, { gap: outerGap, height: actionHeight }]}>
-        <View
+        <Animated.View
           style={[
             styles.tabGroup,
             {
@@ -143,6 +157,7 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
               borderRadius: actionHeight / 2,
               borderWidth: 1.0,
               borderColor: 'rgba(255,255,255,0.5)',
+              transform: [{ translateY: barTranslateY }],
             },
           ]}
         >
@@ -279,48 +294,50 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
             );
           })}
           </View>
-        </View>
+        </Animated.View>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Create a new post"
-          onPress={() => {
-            if (process.env.EXPO_OS === 'ios') {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
-            }
-            router.push(POST_ROUTE);
-          }}
-          style={({ pressed }) => [
-            styles.postButton,
-            {
-              shadowColor: shadow.color,
-              shadowOffset: shadow.offset,
-              shadowOpacity: shadow.opacity * 0.45,
-              shadowRadius: shadow.radius * 0.7,
-              elevation: Math.max(1, Math.round(shadow.elevation * 0.6)),
-              opacity: pressed ? 0.86 : 1,
-              height: actionHeight,
-              width: actionHeight,
-              borderRadius: actionHeight / 2,
-              overflow: 'hidden',
-              borderWidth: 1.0,
-              borderColor: 'rgba(255,255,255,0.5)',
-            },
-          ]}
-        >
-          <BlurView
-            intensity={ctaBlurIntensity}
-            tint={blurTint}
-            style={[styles.blurBackground, { borderRadius: actionHeight / 2 }]}
-          />
-          <View
-            pointerEvents="none"
-            style={[styles.blurOverlay, { borderRadius: actionHeight / 2, backgroundColor: overlayColor }]}
-          />
-          <PostIcon color={iconColor} size={24} />
-        </Pressable>
+        <Animated.View style={{ opacity: postOpacity }}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Create a new post"
+            onPress={() => {
+              if (process.env.EXPO_OS === 'ios') {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
+              }
+              router.push(POST_ROUTE);
+            }}
+            style={({ pressed }) => [
+              styles.postButton,
+              {
+                shadowColor: shadow.color,
+                shadowOffset: shadow.offset,
+                shadowOpacity: shadow.opacity * 0.45,
+                shadowRadius: shadow.radius * 0.7,
+                elevation: Math.max(1, Math.round(shadow.elevation * 0.6)),
+                opacity: pressed ? 0.86 : 1,
+                height: actionHeight,
+                width: actionHeight,
+                borderRadius: actionHeight / 2,
+                overflow: 'hidden',
+                borderWidth: 1.0,
+                borderColor: 'rgba(255,255,255,0.5)',
+              },
+            ]}
+          >
+            <BlurView
+              intensity={ctaBlurIntensity}
+              tint={blurTint}
+              style={[styles.blurBackground, { borderRadius: actionHeight / 2 }]}
+            />
+            <View
+              pointerEvents="none"
+              style={[styles.blurOverlay, { borderRadius: actionHeight / 2, backgroundColor: overlayColor }]}
+            />
+            <PostIcon color={iconColor} size={24} />
+          </Pressable>
+        </Animated.View>
       </View>
-    </Animated.View>
+    </View>
   );
 }
 
@@ -393,5 +410,8 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 0,
+  },
+  shadowWrapper: {
+    ...StyleSheet.absoluteFillObject,
   },
 });
