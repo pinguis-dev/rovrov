@@ -13,6 +13,50 @@ import { PostIcon } from '@/design/icons';
 const LEFT_ROUTE_ORDER = ['index', 'map', 'notifications', 'account'] as const;
 const POST_ROUTE = '/modal';
 
+function parseColorToRgb(color: string): [number, number, number] | null {
+  const hexMatch = color.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+  if (hexMatch) {
+    const hex = hexMatch[1];
+    if (hex.length === 3) {
+      const r = parseInt(hex[0] + hex[0], 16);
+      const g = parseInt(hex[1] + hex[1], 16);
+      const b = parseInt(hex[2] + hex[2], 16);
+      return [r, g, b];
+    }
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    return [r, g, b];
+  }
+
+  const rgbaMatch = color.match(/^rgba?\(([^)]+)\)$/i);
+  if (rgbaMatch) {
+    const parts = rgbaMatch[1]
+      .split(',')
+      .map((part) => parseFloat(part.trim()))
+      .filter((value, index) => index < 3 && Number.isFinite(value));
+    if (parts.length === 3) {
+      return parts as [number, number, number];
+    }
+  }
+
+  return null;
+}
+
+function getRelativeLuminance(color: string): number {
+  const rgb = parseColorToRgb(color);
+  if (!rgb) {
+    return 1;
+  }
+
+  const [r, g, b] = rgb.map((value) => {
+    const channel = value / 255;
+    return channel <= 0.03928 ? channel / 12.92 : Math.pow((channel + 0.055) / 1.055, 2.4);
+  }) as [number, number, number];
+
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
 export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const tokens = useDesignTokens();
   const insets = useSafeAreaInsets();
@@ -28,9 +72,12 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
   const bottomOffset = insets.bottom > 0 ? 0 : baseBottomOffset;
   const bottomPadding = insets.bottom + bottomOffset;
   const hideDistance = bottomPadding + actionHeight + baseBottomOffset;
+  const surfaceBaseColor = tokens.colors['color-surface-base'];
+  const surfaceLuminance = getRelativeLuminance(surfaceBaseColor);
+  const overlayColor = surfaceLuminance > 0.7 ? 'rgba(196, 203, 217, 0.18)' : 'rgba(255, 255, 255, 0.22)';
   const iconHighlightColor = 'rgba(58, 58, 58, 0.08)';
-  const tabBarBlurIntensity = 120;
-  const ctaBlurIntensity = 110;
+  const tabBarBlurIntensity = 85;
+  const ctaBlurIntensity = 72;
   const highlightValuesRef = useRef<Record<string, Animated.Value>>({});
   const highlightStateRef = useRef<Record<string, boolean>>({});
 
@@ -71,9 +118,9 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
             {
               shadowColor: shadow.color,
               shadowOffset: shadow.offset,
-              shadowOpacity: shadow.opacity,
-              shadowRadius: shadow.radius,
-              elevation: shadow.elevation,
+              shadowOpacity: shadow.opacity * 0.6,
+              shadowRadius: shadow.radius * 0.8,
+              elevation: Math.max(1, Math.round(shadow.elevation * 0.6)),
               height: actionHeight,
               borderRadius: actionHeight,
             },
@@ -84,7 +131,10 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
             tint="light"
             style={[styles.blurBackground, { borderRadius: actionHeight }]}
           />
-          <View pointerEvents="none" style={[styles.blurOverlay, { borderRadius: actionHeight }]} />
+          <View
+            pointerEvents="none"
+            style={[styles.blurOverlay, { borderRadius: actionHeight, backgroundColor: overlayColor }]}
+          />
           <View style={[styles.tabContent, { paddingHorizontal: tokens.spacing['space-4'] }]}>
             {leftRoutes.map((route) => {
               const routeIndex = state.routes.findIndex((item) => item.key === route.key);
@@ -222,9 +272,9 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
             {
               shadowColor: shadow.color,
               shadowOffset: shadow.offset,
-              shadowOpacity: shadow.opacity,
-              shadowRadius: shadow.radius,
-              elevation: shadow.elevation,
+              shadowOpacity: shadow.opacity * 0.6,
+              shadowRadius: shadow.radius * 0.8,
+              elevation: Math.max(1, Math.round(shadow.elevation * 0.6)),
               opacity: pressed ? 0.86 : 1,
               height: actionHeight,
               width: actionHeight,
@@ -238,7 +288,10 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
             tint="light"
             style={[styles.blurBackground, { borderRadius: actionHeight / 2 }]}
           />
-          <View pointerEvents="none" style={[styles.blurOverlay, { borderRadius: actionHeight / 2 }]} />
+          <View
+            pointerEvents="none"
+            style={[styles.blurOverlay, { borderRadius: actionHeight / 2, backgroundColor: overlayColor }]}
+          />
           <PostIcon color={tokens.colors['color-accent-primary']} size={32} />
         </Pressable>
       </View>
@@ -306,6 +359,6 @@ const styles = StyleSheet.create({
   },
   blurOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    backgroundColor: 'rgba(220, 226, 238, 0.16)',
   },
 });
