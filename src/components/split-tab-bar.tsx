@@ -67,7 +67,7 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
             styles.tabGroup,
             {
               backgroundColor: tokens.colors['color-surface-glass'],
-              paddingHorizontal: tokens.spacing['space-16'],
+              paddingHorizontal: tokens.spacing['space-4'],
               gap: innerGap,
               shadowColor: shadow.color,
               shadowOffset: shadow.offset,
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 4,
     height: '100%',
   },
   iconPill: {
