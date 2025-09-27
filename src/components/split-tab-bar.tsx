@@ -21,7 +21,7 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
 
   const horizontalPadding = tokens.spacing['space-24'];
   const outerGap = tokens.spacing['space-16'];
-  const innerGap = tokens.spacing['space-12'];
+  const innerGap = 0;
   const actionHeight = 56;
   const baseBottomOffset = tokens.spacing['space-8'];
   const bottomOffset = insets.bottom > 0 ? 0 : baseBottomOffset;
@@ -64,7 +64,7 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
             styles.tabGroup,
             {
               backgroundColor: tokens.colors['color-surface-glass'],
-              paddingHorizontal: tokens.spacing['space-12'],
+              paddingHorizontal: tokens.spacing['space-16'],
               gap: innerGap,
               shadowColor: shadow.color,
               shadowOffset: shadow.offset,
@@ -72,7 +72,7 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
               shadowRadius: shadow.radius,
               elevation: shadow.elevation,
               height: actionHeight,
-              borderRadius: actionHeight / 2,
+              borderRadius: actionHeight,
               alignItems: 'center',
             },
           ]}
@@ -182,21 +182,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'center',
+    width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
   },
   tabGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexShrink: 1,
+    flex: 1,
   },
   tabButton: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 12,
-    minWidth: 56,
+    paddingHorizontal: 16,
     height: '100%',
   },
   postButton: {
     justifyContent: 'center',
     alignItems: 'center',
+    flexShrink: 0,
   },
 });
