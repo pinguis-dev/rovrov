@@ -81,11 +81,7 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
   const iconHighlightColor = 'rgba(0, 0, 0, 0.06)';
   const shadowExtension = tokens.spacing['space-64'] + tokens.spacing['space-24'];
   const shadowHeight = actionHeight + bottomPadding + shadowExtension;
-  const shadowColors = [
-    'rgba(15, 23, 42, 0)',
-    'rgba(15, 23, 42, 0.16)',
-    'rgba(15, 23, 42, 0.32)',
-  ] as const;
+  const shadowColors = ['rgba(255, 255, 255, 0)', 'rgba(255, 255, 255, 0.12)', 'rgba(255, 255, 255, 0.35)'] as const;
   const tabBarBlurIntensity = 22;
   const ctaBlurIntensity = 25;
   const highlightValuesRef = useRef<Record<string, Animated.Value>>({});
@@ -156,7 +152,7 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
               height: actionHeight,
               borderRadius: actionHeight / 2,
               borderWidth: 1.0,
-              borderColor: 'rgba(255,255,255,0.5)',
+              borderColor: 'rgba(255,255,255,0.6)',
               transform: [{ translateY: barTranslateY }],
             },
           ]}
@@ -368,6 +364,12 @@ const styles = StyleSheet.create({
     maxWidth: 480,
     alignSelf: 'center',
     zIndex: 1,
+    shadowColor: 'rgba(15, 23, 42, 0.60)',
+    shadowOffset: { width: 0, height: 18 },
+    shadowOpacity: 0.28,
+    shadowRadius: 28,
+    elevation: 22,
+    backgroundColor: 'transparent',
   },
   tabGroup: {
     flexDirection: 'row',
