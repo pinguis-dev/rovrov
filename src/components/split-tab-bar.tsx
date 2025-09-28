@@ -4,7 +4,7 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useMemo, useRef } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
+import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTabBarVisibilityValue } from '@/components/tab-bar-visibility';
@@ -68,7 +68,7 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
   const horizontalPadding = tokens.spacing['space-24'];
   const outerGap = tokens.spacing['space-16'];
   const innerGap = 0;
-  const actionHeight = 56;
+  const actionHeight = 60;
   const baseBottomOffset = tokens.spacing['space-8'];
   const bottomOffset = insets.bottom > 0 ? 0 : baseBottomOffset;
   const bottomPadding = insets.bottom + bottomOffset;
@@ -78,7 +78,7 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
   const overlayColor = 'rgba(255, 255, 255, 0.40)';
   const blurTint = 'light';
   const iconColor = tokens.colors['color-text-title'];
-  const iconHighlightColor = 'rgba(255, 255, 255, 0.24)';
+  const iconHighlightColor = 'rgba(0, 0, 0, 0.06)';
   const shadowExtension = tokens.spacing['space-64'] + tokens.spacing['space-24'];
   const shadowHeight = actionHeight + bottomPadding + shadowExtension;
   const shadowColors = [
@@ -175,6 +175,8 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
               const routeIndex = state.routes.findIndex((item) => item.key === route.key);
               const isFocused = state.index === routeIndex;
               const { options } = descriptors[route.key];
+              const isFirstTab = route === leftRoutes[0];
+              const isLastTab = route === leftRoutes[leftRoutes.length - 1];
               const storedHighlight = highlightValuesRef.current[route.key];
               const highlightValue =
                 storedHighlight ?? new Animated.Value(isFocused ? 1 : 0);
@@ -240,6 +242,8 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
                     styles.tabButton,
                     {
                       opacity: pressed ? 0.85 : 1,
+                      marginLeft: isFirstTab ? tokens.spacing['space-4'] : 0,
+                      marginRight: isLastTab ? tokens.spacing['space-4'] : 0,
                     },
                   ]}
                 >
@@ -262,6 +266,8 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
                       {
                         top: tokens.spacing['space-4'],
                         bottom: tokens.spacing['space-4'],
+                        left: tokens.spacing['space-4'],
+                        right: tokens.spacing['space-4'],
                         borderRadius: actionHeight,
                         backgroundColor: iconHighlightColor,
                         opacity: highlightValue,
@@ -269,25 +275,28 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
                     ]}
                   />
                   <View style={styles.iconStack}>
-                    {inactiveIconElement ? (
-                      <Animated.View
-                        pointerEvents="none"
-                        style={{
-                          position: 'absolute',
-                          opacity: highlightValue.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [1, 0],
-                          }),
-                        }}
-                      >
-                        {inactiveIconElement}
-                      </Animated.View>
-                    ) : null}
-                    {activeIconElement ? (
-                      <Animated.View pointerEvents="none" style={{ opacity: highlightValue }}>
-                        {activeIconElement}
-                      </Animated.View>
-                    ) : inactiveIconElement}
+                    <View style={styles.iconWrapper}>
+                      {inactiveIconElement ? (
+                        <Animated.View
+                          pointerEvents="none"
+                          style={{
+                            position: 'absolute',
+                            opacity: highlightValue.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [1, 0],
+                            }),
+                          }}
+                        >
+                          {inactiveIconElement}
+                        </Animated.View>
+                      ) : null}
+                      {activeIconElement ? (
+                        <Animated.View pointerEvents="none" style={{ opacity: highlightValue }}>
+                          {activeIconElement}
+                        </Animated.View>
+                      ) : inactiveIconElement}
+                    </View>
+                    <Text style={styles.iconLabel}>{labelText}</Text>
                   </View>
                 </View>
               </Pressable>
@@ -388,7 +397,12 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
   },
   iconStack: {
-    minWidth: 36,
+    minWidth: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconWrapper: {
+    minHeight: 26,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -403,6 +417,14 @@ const styles = StyleSheet.create({
   blurOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'transparent',
+  },
+  iconLabel: {
+    marginTop: 2,
+    fontSize: 11,
+    lineHeight: 14,
+    color: '#000000',
+    textAlign: 'center',
+    fontWeight: '500',
   },
   shadowBackdrop: {
     position: 'absolute',

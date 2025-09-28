@@ -1,49 +1,38 @@
-import RemixIcon from 'react-native-remix-icon';
+import type { ComponentProps } from 'react';
 
-export const TAB_ICON_SIZE = 28;
+import { Ionicons } from '@expo/vector-icons';
 
-export const tabIconGlyphs = {
-  timeline: {
-    line: 'layout-2-line',
-    fill: 'layout-2-fill',
-  },
-  map: {
-    line: 'map-line',
-    fill: 'map-fill',
-  },
-  notifications: {
-    line: 'notification-4-line',
-    fill: 'notification-4-fill',
-  },
-  account: {
-    line: 'account-pin-circle-line',
-    fill: 'account-pin-circle-fill',
-  },
-  post: {
-    line: 'add-line',
-    fill: 'add-line',
-  },
-} as const;
+export const TAB_ICON_SIZE = 24;
 
-export type TabIconKey = keyof typeof tabIconGlyphs;
+type IoniconName = ComponentProps<typeof Ionicons>['name'];
+
+const iconNameMap: Record<'tl' | 'map' | 'notifications' | 'account', IoniconName> = {
+  tl: 'grid',
+  map: 'map',
+  notifications: 'notifications',
+  account: 'person-circle-sharp',
+};
+
+const ICON_COLOR = '#262626';
+
+export type TabIconKey = keyof typeof iconNameMap;
 
 export function TabIcon({
   icon,
-  focused,
-  color,
+  focused: _focused,
+  color: _color,
   size = TAB_ICON_SIZE,
 }: {
-  icon: Exclude<TabIconKey, 'post'>;
+  icon: TabIconKey;
   focused: boolean;
   color: string;
   size?: number;
 }) {
-  const glyph = focused ? tabIconGlyphs[icon].fill : tabIconGlyphs[icon].line;
+  const effectiveSize = icon === 'account' ? (size ?? TAB_ICON_SIZE) + 2 : size ?? TAB_ICON_SIZE;
 
-  return <RemixIcon name={glyph} size={size} color={color} />;
+  return <Ionicons name={iconNameMap[icon]} size={effectiveSize} color={ICON_COLOR} />;
 }
 
 export function PostIcon({ color, size = TAB_ICON_SIZE }: { color: string; size?: number }) {
-  const glyph = tabIconGlyphs.post.line;
-  return <RemixIcon name={glyph} size={size} color={color} />;
+  return <Ionicons name="add-sharp" size={size} color={color} />;
 }
