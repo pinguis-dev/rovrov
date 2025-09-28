@@ -86,6 +86,9 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
   const ctaBlurIntensity = 25;
   const highlightValuesRef = useRef<Record<string, Animated.Value>>({});
   const highlightStateRef = useRef<Record<string, boolean>>({});
+  const highlightHideDuration = 200;
+  const highlightShowDuration = 320;
+  const highlightShowDelay = highlightHideDuration;
   const postOpacity = useMemo(
     () =>
       visibility.interpolate({
@@ -184,7 +187,8 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
                 highlightStateRef.current[route.key] = isFocused;
                 Animated.timing(highlightValue, {
                   toValue: isFocused ? 1 : 0,
-                  duration: 320,
+                  duration: isFocused ? highlightShowDuration : highlightHideDuration,
+                  delay: isFocused ? highlightShowDelay : 0,
                   easing: Easing.out(Easing.quad),
                   useNativeDriver: true,
                 }).start();
@@ -272,25 +276,9 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
                   />
                   <View style={styles.iconStack}>
                     <View style={styles.iconWrapper}>
-                      {inactiveIconElement ? (
-                        <Animated.View
-                          pointerEvents="none"
-                          style={{
-                            position: 'absolute',
-                            opacity: highlightValue.interpolate({
-                              inputRange: [0, 1],
-                              outputRange: [1, 0],
-                            }),
-                          }}
-                        >
-                          {inactiveIconElement}
-                        </Animated.View>
-                      ) : null}
-                      {activeIconElement ? (
-                        <Animated.View pointerEvents="none" style={{ opacity: highlightValue }}>
-                          {activeIconElement}
-                        </Animated.View>
-                      ) : inactiveIconElement}
+                      {isFocused
+                        ? activeIconElement ?? inactiveIconElement
+                        : inactiveIconElement ?? activeIconElement}
                     </View>
                     <Text style={styles.iconLabel}>{labelText}</Text>
                   </View>
