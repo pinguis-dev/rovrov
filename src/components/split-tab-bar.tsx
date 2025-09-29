@@ -1,189 +1,429 @@
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useMemo, useRef } from 'react';
+import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useTabBarVisibilityValue } from '@/components/tab-bar-visibility';
 import { useDesignTokens } from '@/design/design-system';
 import { PostIcon } from '@/design/icons';
 
 const LEFT_ROUTE_ORDER = ['index', 'map', 'notifications', 'account'] as const;
 const POST_ROUTE = '/modal';
 
+function parseColorToRgb(color: string): [number, number, number] | null {
+  const hexMatch = color.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+  if (hexMatch) {
+    const hex = hexMatch[1];
+    if (hex.length === 3) {
+      const r = parseInt(hex[0] + hex[0], 16);
+      const g = parseInt(hex[1] + hex[1], 16);
+      const b = parseInt(hex[2] + hex[2], 16);
+      return [r, g, b];
+    }
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    return [r, g, b];
+  }
+
+  const rgbaMatch = color.match(/^rgba?\(([^)]+)\)$/i);
+  if (rgbaMatch) {
+    const parts = rgbaMatch[1]
+      .split(',')
+      .map((part) => parseFloat(part.trim()))
+      .filter((value, index) => index < 3 && Number.isFinite(value));
+    if (parts.length === 3) {
+      return parts as [number, number, number];
+    }
+  }
+
+  return null;
+}
+
+function getRelativeLuminance(color: string): number {
+  const rgb = parseColorToRgb(color);
+  if (!rgb) {
+    return 1;
+  }
+
+  const [r, g, b] = rgb.map((value) => {
+    const channel = value / 255;
+    return channel <= 0.03928 ? channel / 12.92 : Math.pow((channel + 0.055) / 1.055, 2.4);
+  }) as [number, number, number];
+
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
 export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const tokens = useDesignTokens();
   const insets = useSafeAreaInsets();
+  const visibility = useTabBarVisibilityValue();
 
-  const border = tokens.borders['border-0.3'];
-  const labelToken = tokens.typography['typo-footnote'];
   const shadow = tokens.shadows['shadow-soft'];
+
+  const horizontalPadding = tokens.spacing['space-24'];
+  const outerGap = tokens.spacing['space-16'];
+  const innerGap = 0;
+  const actionHeight = 60;
+  const baseBottomOffset = tokens.spacing['space-8'];
+  const bottomOffset = insets.bottom > 0 ? 0 : baseBottomOffset;
+  const bottomPadding = insets.bottom + bottomOffset;
+  const hideDistance = bottomPadding + actionHeight + baseBottomOffset;
+  const surfaceBaseColor = tokens.colors['color-surface-base'];
+  const surfaceLuminance = getRelativeLuminance(surfaceBaseColor);
+  const overlayColor = 'rgba(255, 255, 255, 0.40)';
+  const blurTint = 'light';
+  const iconColor = tokens.colors['color-text-title'];
+  const iconHighlightColor = 'rgba(0, 0, 0, 0.06)';
+  const shadowExtension = tokens.spacing['space-64'] + tokens.spacing['space-24'];
+  const shadowHeight = actionHeight + bottomPadding + shadowExtension;
+  const shadowColors = ['rgba(255, 255, 255, 0)', 'rgba(255, 255, 255, 0.12)', 'rgba(255, 255, 255, 0.35)'] as const;
+  const tabBarBlurIntensity = 22;
+  const ctaBlurIntensity = 25;
+  const highlightValuesRef = useRef<Record<string, Animated.Value>>({});
+  const highlightStateRef = useRef<Record<string, boolean>>({});
+  const highlightHideDuration = 180;
+  const highlightShowDuration = 240;
+  const highlightShowDelay = highlightHideDuration;
+  const postOpacity = useMemo(
+    () =>
+      visibility.interpolate({
+        inputRange: [0, 1],
+        outputRange: [1, 0.35],
+        extrapolate: 'clamp',
+      }),
+    [visibility],
+  );
+
+  const barTranslateY = useMemo(
+    () =>
+      visibility.interpolate({
+        inputRange: [0, 1],
+        outputRange: [0, hideDistance],
+      }),
+    [hideDistance],
+  );
 
   const containerStyle = useMemo(
     () => [
       styles.container,
       {
-        backgroundColor: tokens.colors['color-surface-glass'],
-        borderTopWidth: border.width,
-        borderTopColor: tokens.colors[border.color],
-        paddingHorizontal: tokens.spacing['space-24'],
-        paddingTop: tokens.spacing['space-8'],
-        paddingBottom: Math.max(insets.bottom, tokens.spacing['space-12']),
-        shadowColor: shadow.color,
-        shadowOffset: shadow.offset,
-        shadowOpacity: shadow.opacity,
-        shadowRadius: shadow.radius,
-        elevation: shadow.elevation,
+        paddingBottom: bottomPadding,
+        paddingHorizontal: horizontalPadding,
+        height: actionHeight + bottomPadding,
       },
     ],
-    [
-      border.color,
-      border.width,
-      insets.bottom,
-      shadow.color,
-      shadow.elevation,
-      shadow.offset,
-      shadow.opacity,
-      shadow.radius,
-      tokens,
-    ],
+    [actionHeight, bottomPadding, horizontalPadding],
   );
-
-  const tabGap = tokens.spacing['space-16'];
 
   const leftRoutes = LEFT_ROUTE_ORDER.map((routeName) =>
     state.routes.find((route) => route.name === routeName),
   ).filter((route): route is (typeof state.routes)[number] => Boolean(route));
 
   return (
-    <View style={containerStyle}>
-      <View style={[styles.leftSection, { gap: tabGap }]}>
-        {leftRoutes.map((route) => {
-          const routeIndex = state.routes.findIndex((item) => item.key === route.key);
-          const isFocused = state.index === routeIndex;
-          const { options } = descriptors[route.key];
-
-          const defaultLabel = route.name.charAt(0).toUpperCase() + route.name.slice(1);
-          const rawLabel = options.tabBarLabel ?? options.title ?? defaultLabel;
-          const labelText = typeof rawLabel === 'string' ? rawLabel : defaultLabel;
-          const iconColor = isFocused
-            ? tokens.colors['color-icon-active']
-            : tokens.colors['color-icon-default'];
-          const textColor = isFocused
-            ? tokens.colors['color-text-title']
-            : tokens.colors['color-text-body'];
-
-          const onPress = () => {
-            if (isFocused) {
-              return;
-            }
-
-            if (process.env.EXPO_OS === 'ios') {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
-            }
-
-            navigation.navigate(route.name);
-          };
-
-          const onLongPress = () => {
-            navigation.emit({
-              type: 'tabLongPress',
-              target: route.key,
-            });
-          };
-
-          const icon = options.tabBarIcon?.({ focused: isFocused, color: iconColor, size: 28 });
-
-          return (
-            <Pressable
-              key={route.key}
-              accessibilityRole="button"
-              accessibilityState={isFocused ? { selected: true } : {}}
-              accessibilityLabel={options.tabBarAccessibilityLabel}
-              testID={options.tabBarButtonTestID}
-              onPress={onPress}
-              onLongPress={onLongPress}
-              style={({ pressed }) => [
-                styles.tabButton,
-                {
-                  paddingVertical: tokens.spacing['space-4'],
-                  gap: tokens.spacing['space-4'],
-                  opacity: pressed ? 0.85 : 1,
-                },
-              ]}
-            >
-              <View>{icon}</View>
-              <Text
-                style={{
-                  fontFamily: labelToken.fontFamily,
-                  fontSize: 12,
-                  letterSpacing: labelToken.letterSpacing,
-                  color: textColor,
-                }}
-              >
-                {labelText}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      <View style={{ flex: 1 }} />
-
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Create a new post"
-        onPress={() => {
-          if (process.env.EXPO_OS === 'ios') {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
-          }
-          router.push(POST_ROUTE);
-        }}
-        style={({ pressed }) => [
-          styles.postButton,
-          {
-            backgroundColor: tokens.colors['color-surface-elevated'],
-            borderColor: tokens.colors[border.color],
-            borderWidth: border.width,
-            paddingVertical: tokens.spacing['space-8'],
-            paddingHorizontal: tokens.spacing['space-16'],
-            gap: tokens.spacing['space-8'],
-            opacity: pressed ? 0.86 : 1,
-          },
-        ]}
+    <View
+      pointerEvents="box-none"
+      style={containerStyle}
+    >
+      <Animated.View
+        pointerEvents="none"
+        style={[styles.shadowWrapper, { transform: [{ translateY: barTranslateY }] }]}
       >
-        <PostIcon color={tokens.colors['color-accent-primary']} />
-        <Text
-          style={{
-            fontFamily: labelToken.fontFamily,
-            fontSize: 14,
-            letterSpacing: labelToken.letterSpacing,
-            color: tokens.colors['color-accent-primary'],
-          }}
+        <LinearGradient
+          pointerEvents="none"
+          colors={shadowColors}
+          locations={[0, 0.8, 1]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={[styles.shadowBackdrop, { height: shadowHeight, marginTop: tokens.spacing['space-16'] }]}
+        />
+      </Animated.View>
+      <View style={[styles.innerWrapper, { gap: outerGap, height: actionHeight }]}>
+        <Animated.View
+          style={[
+            styles.tabGroup,
+            {
+              shadowColor: shadow.color,
+              shadowOffset: shadow.offset,
+              shadowOpacity: shadow.opacity * 0.45,
+              shadowRadius: shadow.radius * 0.7,
+              elevation: Math.max(1, Math.round(shadow.elevation * 0.6)),
+              height: actionHeight,
+              borderRadius: actionHeight / 2,
+              borderWidth: 1.0,
+              borderColor: 'rgba(255,255,255,0.6)',
+              transform: [{ translateY: barTranslateY }],
+            },
+          ]}
         >
-          Post
-        </Text>
-      </Pressable>
+          <BlurView
+            intensity={tabBarBlurIntensity}
+            tint={blurTint}
+            style={[styles.blurBackground, { borderRadius: actionHeight }]}
+          />
+          <View
+            pointerEvents="none"
+            style={[styles.blurOverlay, { borderRadius: actionHeight, backgroundColor: overlayColor }]}
+          />
+          <View style={[styles.tabContent, { paddingHorizontal: tokens.spacing['space-4'] }]}>
+            {leftRoutes.map((route) => {
+              const routeIndex = state.routes.findIndex((item) => item.key === route.key);
+              const isFocused = state.index === routeIndex;
+              const { options } = descriptors[route.key];
+              const isFirstTab = route === leftRoutes[0];
+              const isLastTab = route === leftRoutes[leftRoutes.length - 1];
+              const storedHighlight = highlightValuesRef.current[route.key];
+              const highlightValue =
+                storedHighlight ?? new Animated.Value(isFocused ? 1 : 0);
+
+              if (!storedHighlight) {
+                highlightValuesRef.current[route.key] = highlightValue;
+                highlightStateRef.current[route.key] = isFocused;
+              } else if (highlightStateRef.current[route.key] !== isFocused) {
+                highlightStateRef.current[route.key] = isFocused;
+                Animated.timing(highlightValue, {
+                  toValue: isFocused ? 1 : 0,
+                  duration: isFocused ? highlightShowDuration : highlightHideDuration,
+                  delay: isFocused ? highlightShowDelay : 0,
+                  easing: Easing.out(Easing.quad),
+                  useNativeDriver: true,
+                }).start();
+              }
+
+              const defaultLabel = route.name.charAt(0).toUpperCase() + route.name.slice(1);
+              const rawLabel = options.tabBarLabel ?? options.title ?? defaultLabel;
+              const labelText = typeof rawLabel === 'string' ? rawLabel : defaultLabel;
+
+              const activeIconElement = options.tabBarIcon?.({
+                focused: true,
+                color: iconColor,
+                size: 24,
+              });
+
+              const inactiveIconElement = options.tabBarIcon?.({
+                focused: false,
+                color: iconColor,
+                size: 24,
+              });
+
+              const onPress = () => {
+                if (isFocused) {
+                  return;
+                }
+
+                if (process.env.EXPO_OS === 'ios') {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
+                }
+
+                navigation.navigate(route.name);
+              };
+
+              const onLongPress = () => {
+                navigation.emit({
+                  type: 'tabLongPress',
+                  target: route.key,
+                });
+              };
+
+              return (
+                <Pressable
+                  key={route.key}
+                  accessibilityRole="button"
+                  accessibilityState={isFocused ? { selected: true } : {}}
+                  accessibilityLabel={options.tabBarAccessibilityLabel ?? labelText}
+                  testID={options.tabBarButtonTestID}
+                  onPress={onPress}
+                  onLongPress={onLongPress}
+                  style={({ pressed }) => [
+                    styles.tabButton,
+                    {
+                      opacity: pressed ? 0.85 : 1,
+                      marginLeft: isFirstTab ? tokens.spacing['space-4'] : 0,
+                      marginRight: isLastTab ? tokens.spacing['space-4'] : 0,
+                    },
+                  ]}
+                >
+                <View
+                  style={[
+                    styles.iconPill,
+                    {
+                      paddingHorizontal: tokens.spacing['space-16'],
+                      paddingVertical: tokens.spacing['space-4'],
+                      height: '100%',
+                      borderRadius: actionHeight / 2,
+                      overflow: 'hidden',
+                    },
+                  ]}
+                >
+                  <Animated.View
+                    pointerEvents="none"
+                    style={[
+                      styles.iconHighlight,
+                      {
+                        top: tokens.spacing['space-4'],
+                        bottom: tokens.spacing['space-4'],
+                        left: tokens.spacing['space-4'],
+                        right: tokens.spacing['space-4'],
+                        borderRadius: actionHeight,
+                        backgroundColor: iconHighlightColor,
+                        opacity: highlightValue,
+                      },
+                    ]}
+                  />
+                  <View style={styles.iconStack}>
+                    <View style={styles.iconWrapper}>
+                      {isFocused
+                        ? activeIconElement ?? inactiveIconElement
+                        : inactiveIconElement ?? activeIconElement}
+                    </View>
+                    <Text style={styles.iconLabel}>{labelText}</Text>
+                  </View>
+                </View>
+              </Pressable>
+            );
+          })}
+          </View>
+        </Animated.View>
+
+        <Animated.View style={{ opacity: postOpacity }}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Create a new post"
+            onPress={() => {
+              if (process.env.EXPO_OS === 'ios') {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
+              }
+              router.push(POST_ROUTE);
+            }}
+            style={({ pressed }) => [
+              styles.postButton,
+              {
+                shadowColor: shadow.color,
+                shadowOffset: shadow.offset,
+                shadowOpacity: shadow.opacity * 0.45,
+                shadowRadius: shadow.radius * 0.7,
+                elevation: Math.max(1, Math.round(shadow.elevation * 0.6)),
+                opacity: pressed ? 0.86 : 1,
+                height: actionHeight,
+                width: actionHeight,
+                borderRadius: actionHeight / 2,
+                overflow: 'hidden',
+                borderWidth: 1.0,
+                borderColor: 'rgba(255,255,255,0.6)',
+              },
+            ]}
+          >
+            <BlurView
+              intensity={ctaBlurIntensity}
+              tint={blurTint}
+              style={[styles.blurBackground, { borderRadius: actionHeight / 2 }]}
+            />
+            <View
+              pointerEvents="none"
+              style={[styles.blurOverlay, { borderRadius: actionHeight / 2, backgroundColor: overlayColor }]}
+            />
+            <PostIcon color={iconColor} size={24} />
+          </Pressable>
+        </Animated.View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingTop: 0,
     alignItems: 'center',
+    zIndex: 10,
   },
-  leftSection: {
+  innerWrapper: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
+    zIndex: 1,
+    shadowColor: 'rgba(15, 23, 42, 0.60)',
+    shadowOffset: { width: 0, height: 18 },
+    shadowOpacity: 0.28,
+    shadowRadius: 28,
+    elevation: 22,
+    backgroundColor: 'transparent',
+  },
+  tabGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexShrink: 1,
+    flex: 1,
+    overflow: 'hidden',
+  },
+  tabContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: '100%',
   },
   tabButton: {
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    height: '100%',
+  },
+  iconPill: {
+    minWidth: 64,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconHighlight: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  iconStack: {
+    minWidth: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconWrapper: {
+    minHeight: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   postButton: {
-    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 999,
+    flexShrink: 0,
+  },
+  blurBackground: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  blurOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'transparent',
+  },
+  iconLabel: {
+    marginTop: 2,
+    fontSize: 11,
+    lineHeight: 14,
+    color: '#000000',
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  shadowBackdrop: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 0,
+  },
+  shadowWrapper: {
+    ...StyleSheet.absoluteFillObject,
   },
 });

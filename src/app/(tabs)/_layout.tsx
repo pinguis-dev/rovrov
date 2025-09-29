@@ -15,7 +15,7 @@ export default function TabLayout() {
         options={{
           title: 'TL',
           tabBarIcon: ({ focused, color }) => (
-            <TabIcon icon="timeline" focused={focused} color={color} />
+            <TabIcon icon="tl" focused={focused} color={color} />
           ),
         }}
       />
