@@ -1,45 +1,68 @@
 ---
 id: FE-0002
-title: アプリシェルとSplit Bottom Navigationの実装
+title: アプリシェルと Split Bottom Navigation の実装
 type: feature
 area: frontend
 epic: EPIC-FE-MVP
 ---
 
 ## 概要
-TL/Map/Notification/Account/Post の導線を備えたアプリシェルを構築し、`docs/design_animation_rules.md` に準拠した split bottom navigation を実装する。
+Expo Router を用いて TL / Map / Notification / Account タブと中央の Post アクションで構成されたカスタム SplitTabBar を実装した。タブバーはスクロールに応じてフェードアウトし、ガラス調の背景と白フェードで画面下に自然に溶け込む。
 
-## 背景・目的
-- `docs/proposal.md` では、左セクションがフェードアウトするSplitタブ、右セクションが固定のPost FABという特徴的な導線が求められている。
-- 画面ごとの実装に先立ち、ルーティングとナビゲーションの土台を整えることで、一貫したスクロール挙動と透明感のあるボトムバーを再利用できる。
+## 実装ガイド
 
-## 受け入れ基準 (Acceptance Criteria)
-- React Navigation (または Expo Router) を用いて、TL/Map/Notification/Account をタブ、Post をモーダル起動とする構成が機能する。
-- ボトムバー左セクション (TL/Map/Notification/Account) は 48px 高で、下方向スクロール時に `motion-content` トークンによるフェードで非表示になる。
-- 右セクションの Post FAB は中央に1アイコン分の空白を挟んで常時表示され、タップで投稿フロー (FE-0003) のプレースホルダー画面を起動する。
-- Remix Icon の `*-Line` が未選択、`*-Fill` が選択状態として描画され、アイコンサイズは 28px、余白は `space-12` とする。
-- Safe Area 対応済みで、iPhone 15 Pro (iOS26) シミュレータと Pixel 8 で重なりが発生しない。
-- 背景は `surfaceGlass` 相当 (白 70% + blur) で描画され、半透明ボーダー (`border-0.3`) を上辺に敷く。
+### 1. タブ構成
+- `src/app/(tabs)/_layout.tsx`
+  - TL タブは `name="index"` / `title="TL"` のまま `tabBarIcon` に `TabIcon icon="tl"` を指定。
+  - そのほか `map` / `notifications` / `account` も同様に `TabIcon` を呼び出すだけにする。
+  - 中央の Post モーダルは `router.push('/modal')` で起動。
 
-## 実装スコープ
-- Frontend: Navigation Container、SplitBottomBar コンポーネント、スクロール検知フック、Remix Icon ラッパー、Post モーダルスタブ。
-- Backend: 対象外。
-- Infra: 対象外。
+### 2. アイコン定義
+- `src/design/icons.tsx`
+  - Ionicons (`grid`, `map`, `notifications`, `person-circle-sharp`, `add-sharp`) を使用。
+  - `TAB_ICON_SIZE = 24`。Account のみ +2px（26px）に補正。
+  - 色は常に #000000。未選択／選択でカラー差異はつけず、ハイライトのみで状態表示。
 
-## 実装計画
-- **Navigation Layout**: `AppNavigator` にスタック+タブ構成を定義。タブバーはカスタム `SplitBottomBar` で `height:48`、左右14pxの Safe Area パディング。iOS26 の App Store アプリ底部タブを参考に角を丸めないフラットなバーにする。
-- **Left Cluster**: TL/Map/Notification/Account の4アイコンを水平配置し、各アイコン下に 2px 幅の `color-text-title` インジケータを描画。スクロール量 120px で `opacity:0` までフェードするガラスプレートを重ね、iOS の Home Indicator 周辺の消え方に合わせる。
-- **Right Cluster**: Post FAB は 56px 角の丸型ボタン、中心に `ri/RiAddLine` を配置。背景は `rgba(37,102,255,0.92)`、影は `shadowSoft` で上方向に 6px ずらす。X (旧Twitter) の投稿ボタンを透明感強めにしたイメージ。
-- **Scroll Bridge**: TL や Map からスクロール値を `useSharedValue` (Reanimated) で受け取り、SplitBottomBar に `motion-micro` で伝播。スクロール 0 → 120px で `translateY` 4px + `opacity` フェード。
-- **Modal Trigger**: Post FAB タップで `PostStack` を `presentation:'modal'` で起動し、背景を iOS 標準のブラー (blur radius 30px) に設定。モーダル背景色は `rgba(255,255,255,0.85)`。
+### 3. SplitTabBar (`src/components/split-tab-bar.tsx`)
+- **レイアウト**
+  - `actionHeight = 60`。Safe Area やスクロール値から下パディングやフェード距離を算出。
+  - 背景は `BlurView` + `overlayColor = rgba(255,255,255,0.40)`。
+  - 白フェード `LinearGradient` は `shadowColors = ['rgba(255,255,255,0)', 'rgba(255,255,255,0.45)', 'rgba(255,255,255,0.95)']`。`marginTop: tokens.spacing['space-16']` を指定し、グラデーション開始位置を 16px 下げる。
+- **タブアイコン & ラベル**
+  - 各タブの子要素に 11px ラベル（`tokens.colors['color-text-body']`）を追加。`marginTop: 2`。
+  - 左右端のタブは `marginLeft` / `marginRight` で 4px の余白。
+- **ハイライト**
+  - 背景色 `rgba(0,0,0,0.12)`。上下左右 4px のインセットを持つ。
+  - フェードアウト 200ms → ディレイ 200ms → フェードイン 320ms (`Animated.timing` の `delay` を `isFocused` 時に設定)。
+  - アイコンは切り替えず、ハイライトのみで状態を示す。
+- **スクロール連動**
+  - `useTabBarVisibilityValue()` の値でタブクラスタの `opacity` と `translateY` を制御。
+  - Post ボタンは `postOpacity` を `max(0.35)` にクランプし完全には消えない。
+- **Post ボタン**
+  - Ionicons `add-sharp` (24px)。ボタン自体は `BlurView` + `overlayColor` でカバー。
+  - シャドウはタブクラスタと同じ設定（shadowOpacity 0.45 * 1.0, elevation 3 以上）。
 
-## 実装メモ / 注意点
-- スクロール検知は各画面の `FlatList`/`ScrollView` に `onScroll` + `useSharedValue` を仕込み、`context` 経由で渡す。
-- Notification/Account 画面は仮の `ComingSoon` コンポーネントで OK。`motion-content` でフェードインさせ、透明背景を確認できるようにする。
-- Android での半透明ボーダーは `StyleSheet.hairlineWidth` との相性に注意。`borderTopColor: 'rgba(255,255,255,0.35)'` を直接指定。
+### 4. ハイライト遅延のポイント
+- フェードアウト用 `highlightHideDuration = 200`。
+- フェードインは `highlightShowDelay = 200` / `highlightShowDuration = 320`。
+- `highlightValuesRef` / `highlightStateRef` でタブごとの Animated 値を再利用し、無駄な再生成を避ける。
+
+### 5. その他
+- 影 (`shadow-opacity 0.22`, `shadow-radius 28`, `elevation 22`) を `innerWrapper` に設定し、浮いたような見た目にする。
+- TL / Map / Notification / Account は `LEFT_ROUTE_ORDER` の順。中央ボタン `Post` は `router.push('/modal')`。
+
+## 注意点
+- `CornerGradientOverlay` は最終的に採用せず、標準のボーダー + 白フェードで調整。
+- Safe Area を考慮して高さ 60px を死守。iPhone 15 Pro / Pixel 8 で確認済み。
+
+## テスト / チェック
+- `npm run typecheck`
+- iOS / Android エミュレータでスクロール時のフェード、ハイライトのディレイ、白フェードの位置を目視確認。
 
 ## Definition of Done
-- iOS26 (iPhone 15 Pro) と Android (Pixel 8) のスクリーンキャプチャを PR に添付し、Split タブのフェードと Post FAB の固定が確認できる。
-- ナビゲーション単体のスナップショットテスト、フェードアニメーションの Jest + Reanimated テストが通過。
-- `yarn lint`・`yarn tsc --noEmit` が成功。
-- デザインレビュー (企画)・コードレビューを各1件取得。
+- iOS / Android 双方でタブバーが正常に表示・フェードする。
+- Post モーダル遷移が問題なく起動する。
+- リンター / 型チェックが通過する。
+
+## Installed Packages
+- なし（すべて Expo プロジェクト標準依存に含まれる）

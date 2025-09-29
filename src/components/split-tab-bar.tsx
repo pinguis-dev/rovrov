@@ -86,8 +86,8 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
   const ctaBlurIntensity = 25;
   const highlightValuesRef = useRef<Record<string, Animated.Value>>({});
   const highlightStateRef = useRef<Record<string, boolean>>({});
-  const highlightHideDuration = 200;
-  const highlightShowDuration = 320;
+  const highlightHideDuration = 180;
+  const highlightShowDuration = 240;
   const highlightShowDelay = highlightHideDuration;
   const postOpacity = useMemo(
     () =>
@@ -139,7 +139,7 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
           locations={[0, 0.8, 1]}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 1 }}
-          style={[styles.shadowBackdrop, { height: shadowHeight }]}
+          style={[styles.shadowBackdrop, { height: shadowHeight, marginTop: tokens.spacing['space-16'] }]}
         />
       </Animated.View>
       <View style={[styles.innerWrapper, { gap: outerGap, height: actionHeight }]}>
@@ -313,7 +313,7 @@ export function SplitTabBar({ state, descriptors, navigation }: BottomTabBarProp
                 borderRadius: actionHeight / 2,
                 overflow: 'hidden',
                 borderWidth: 1.0,
-                borderColor: 'rgba(255,255,255,0.5)',
+                borderColor: 'rgba(255,255,255,0.6)',
               },
             ]}
           >

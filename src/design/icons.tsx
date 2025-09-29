@@ -2,7 +2,7 @@ import type { ComponentProps } from 'react';
 
 import { Ionicons } from '@expo/vector-icons';
 
-export const TAB_ICON_SIZE = 24;
+export const TAB_ICON_SIZE = 26;
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
